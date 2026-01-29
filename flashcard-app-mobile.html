@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#3B82F6">
+    <title>MemoryFlow — Мобильное приложение</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'outfit': ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary': '#3B82F6',
+                        'secondary': '#10B981',
+                        'accent': '#F59E0B',
+                        'foreground': '#111827',
+                        'muted': '#F3F4F6',
+                        'border': '#E5E7EB',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * { 
+            font-family: 'Outfit', sans-serif; 
+            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
+        }
+        html, body {
+            overflow-x: hidden;
+            overscroll-behavior: none;
+        }
+        body {
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-top: env(safe-area-inset-top);
+        }
+        .tracking-tight { letter-spacing: -0.02em; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Mobile-specific styles */
+        .safe-area-top { padding-top: env(safe-area-inset-top); }
+        .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        
+        /* Bottom navigation */
+        .bottom-nav {
+            padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+        }
+        
+        /* Card flip animation */
+        .flip-card {
+            perspective: 1000px;
+        }
+        .flip-card-inner {
+            transition: transform 0.5s;
+            transform-style: preserve-3d;
+        }
+        .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+        .flip-card-front, .flip-card-back {
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+        }
+        .flip-card-back {
+            transform: rotateY(180deg);
+        }
+        
+        /* Swipe hint animation */
+        @keyframes swipeHint {
+            0%, 100% { transform: translateX(0); opacity: 0.5; }
+            50% { transform: translateX(-10px); opacity: 1; }
+        }
+        .swipe-hint {
+            animation: swipeHint 2s ease-in-out infinite;
+        }
+        
+        /* Pull to refresh indicator */
+        .pull-indicator {
+            transition: transform 0.2s;
+        }
+        
+        /* Touch feedback */
+        .touch-feedback:active {
+            transform: scale(0.97);
+            opacity: 0.9;
+        }
+        
+        /* Smooth scrolling */
+        .scroll-container {
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+        }
+        
+        /* Modal animation */
+        .modal-enter {
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        
+        /* Hide scrollbar but keep functionality */
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-white text-foreground min-h-screen flex flex-col">
+    
+    <!-- Status Bar Spacer (for iOS) -->
+    <div class="safe-area-top bg-white"></div>
+
+    <!-- Mobile Header -->
+    <header class="bg-white border-b-2 border-border sticky top-0 z-40 px-4 py-3">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
+                    <i data-lucide="brain" class="w-5 h-5 text-white"></i>
+                </div>
+                <span class="text-lg font-bold tracking-tight">MemoryFlow</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button class="p-2 hover:bg-muted rounded-lg transition-colors touch-feedback">
+                    <i data-lucide="search" class="w-5 h-5 text-foreground/60"></i>
+                </button>
+                <button onclick="openModal('notifications-modal')" class="p-2 hover:bg-muted rounded-lg transition-colors touch-feedback relative">
+                    <i data-lucide="bell" class="w-5 h-5 text-foreground/60"></i>
+                    <span class="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full"></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-hidden">
+        
+        <!-- THEMES SECTION (Home) -->
+        <section id="section-themes" class="section-content h-full overflow-y-auto scroll-container hide-scrollbar pb-24">
+            <div class="px-4 py-4">
+                <!-- Today's Stats Cards (Horizontal Scroll) -->
+                <div class="mb-6">
+                    <h2 class="text-sm font-semibold text-foreground/60 uppercase tracking-wider mb-3">Сегодня</h2>
+                    <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2 -mx-4 px-4">
+                        <div class="flex-shrink-0 w-28 bg-primary p-4 rounded-xl">
+                            <p class="text-white/80 text-xs font-medium mb-1">На повтор</p>
+                            <p class="text-2xl font-bold text-white">24</p>
+                        </div>
+                        <div class="flex-shrink-0 w-28 bg-secondary p-4 rounded-xl">
+                            <p class="text-white/80 text-xs font-medium mb-1">Изучено</p>
+                            <p class="text-2xl font-bold text-white">183</p>
+                        </div>
+                        <div class="flex-shrink-0 w-28 bg-accent p-4 rounded-xl">
+                            <p class="text-foreground/60 text-xs font-medium mb-1">Серия</p>
+                            <p class="text-2xl font-bold text-foreground">14 🔥</p>
+                        </div>
+                        <div class="flex-shrink-0 w-28 bg-muted p-4 rounded-xl">
+                            <p class="text-foreground/60 text-xs font-medium mb-1">Точность</p>
+                            <p class="text-2xl font-bold text-foreground">89%</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Review Button -->
+                <button onclick="showSection('review')" class="w-full bg-gradient-to-r from-primary to-blue-600 text-white p-4 rounded-xl mb-6 flex items-center justify-between touch-feedback transition-transform">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                            <i data-lucide="play" class="w-6 h-6"></i>
+                        </div>
+                        <div class="text-left">
+                            <p class="font-bold text-lg">Начать повторение</p>
+                            <p class="text-white/80 text-sm">24 карточки ждут</p>
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-6 h-6 text-white/60"></i>
+                </button>
+
+                <!-- My Themes -->
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold tracking-tight">Мои темы</h2>
+                    <button onclick="openModal('add-theme-modal')" class="p-2 bg-primary text-white rounded-lg touch-feedback transition-transform">
+                        <i data-lucide="plus" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <!-- Themes List -->
+                <div class="space-y-3" id="themes-list">
+                    <!-- Theme Card 1 -->
+                    <div class="bg-blue-50 p-4 rounded-xl touch-feedback transition-transform" onclick="openTheme('javascript')">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="code-2" class="w-6 h-6 text-primary"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between mb-1">
+                                    <h3 class="font-bold truncate">JavaScript Основы</h3>
+                                    <span class="text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded-full flex-shrink-0 ml-2">32</span>
+                                </div>
+                                <p class="text-foreground/60 text-sm truncate mb-2">Переменные, функции, объекты</p>
+                                <div class="h-1.5 bg-white rounded-full overflow-hidden">
+                                    <div class="h-full bg-primary rounded-full" style="width: 78%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Theme Card 2 -->
+                    <div class="bg-green-50 p-4 rounded-xl touch-feedback transition-transform" onclick="openTheme('python')">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="terminal" class="w-6 h-6 text-secondary"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between mb-1">
+                                    <h3 class="font-bold truncate">Python для Data Science</h3>
+                                    <span class="text-xs font-semibold text-secondary bg-secondary/10 px-2 py-1 rounded-full flex-shrink-0 ml-2">45</span>
+                                </div>
+                                <p class="text-foreground/60 text-sm truncate mb-2">NumPy, Pandas, визуализация</p>
+                                <div class="h-1.5 bg-white rounded-full overflow-hidden">
+                                    <div class="h-full bg-secondary rounded-full" style="width: 62%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Theme Card 3 -->
+                    <div class="bg-amber-50 p-4 rounded-xl touch-feedback transition-transform" onclick="openTheme('english')">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="languages" class="w-6 h-6 text-accent"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between mb-1">
+                                    <h3 class="font-bold truncate">Английский B2</h3>
+                                    <span class="text-xs font-semibold text-accent bg-accent/10 px-2 py-1 rounded-full flex-shrink-0 ml-2">120</span>
+                                </div>
+                                <p class="text-foreground/60 text-sm truncate mb-2">Продвинутая лексика и идиомы</p>
+                                <div class="h-1.5 bg-white rounded-full overflow-hidden">
+                                    <div class="h-full bg-accent rounded-full" style="width: 45%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Theme Card 4 -->
+                    <div class="bg-purple-50 p-4 rounded-xl touch-feedback transition-transform" onclick="openTheme('history')">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="book-open" class="w-6 h-6 text-purple-600"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between mb-1">
+                                    <h3 class="font-bold truncate">История России</h3>
+                                    <span class="text-xs font-semibold text-purple-600 bg-purple-600/10 px-2 py-1 rounded-full flex-shrink-0 ml-2">28</span>
+                                </div>
+                                <p class="text-foreground/60 text-sm truncate mb-2">Ключевые даты и события</p>
+                                <div class="h-1.5 bg-white rounded-full overflow-hidden">
+                                    <div class="h-full bg-purple-600 rounded-full" style="width: 91%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Theme Card 5 -->
+                    <div class="bg-rose-50 p-4 rounded-xl touch-feedback transition-transform" onclick="openTheme('biology')">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="dna" class="w-6 h-6 text-rose-600"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between mb-1">
+                                    <h3 class="font-bold truncate">Биология клетки</h3>
+                                    <span class="text-xs font-semibold text-rose-600 bg-rose-600/10 px-2 py-1 rounded-full flex-shrink-0 ml-2">15</span>
+                                </div>
+                                <p class="text-foreground/60 text-sm truncate mb-2">Строение и функции органелл</p>
+                                <div class="h-1.5 bg-white rounded-full overflow-hidden">
+                                    <div class="h-full bg-rose-600 rounded-full" style="width: 33%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- THEME DETAIL SECTION -->
+        <section id="section-theme-detail" class="section-content hidden h-full overflow-y-auto scroll-container hide-scrollbar pb-24">
+            <div class="px-4 py-4">
+                <!-- Back Button -->
+                <button onclick="showSection('themes')" class="flex items-center gap-2 text-foreground/60 mb-4 touch-feedback">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                    <span class="font-medium">Назад</span>
+                </button>
+
+                <!-- Theme Header -->
+                <div class="mb-6">
+                    <h1 class="text-2xl font-bold tracking-tight mb-1" id="theme-detail-title">JavaScript Основы</h1>
+                    <p class="text-foreground/60 text-sm" id="theme-detail-desc">Переменные, функции, объекты и массивы</p>
+                </div>
+
+                <!-- Progress Card -->
+                <div class="bg-primary/10 p-4 rounded-xl mb-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-medium text-sm">Прогресс</span>
+                        <span class="font-bold text-primary">25 / 32</span>
+                    </div>
+                    <div class="h-2 bg-white rounded-full overflow-hidden">
+                        <div class="h-full bg-primary rounded-full" style="width: 78%"></div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <button onclick="startReview()" class="bg-primary text-white p-4 rounded-xl font-semibold touch-feedback transition-transform flex items-center justify-center gap-2">
+                        <i data-lucide="play" class="w-5 h-5"></i>
+                        Повторять
+                    </button>
+                    <button onclick="openModal('ai-generate-modal')" class="bg-purple-600 text-white p-4 rounded-xl font-semibold touch-feedback transition-transform flex items-center justify-center gap-2">
+                        <i data-lucide="sparkles" class="w-5 h-5"></i>
+                        С ИИ
+                    </button>
+                </div>
+
+                <button onclick="openModal('add-card-modal')" class="w-full bg-muted text-foreground p-3 rounded-xl font-semibold touch-feedback transition-transform flex items-center justify-center gap-2 mb-6">
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                    Добавить карточку
+                </button>
+
+                <!-- Cards List -->
+                <h3 class="font-bold mb-3">Карточки</h3>
+                <div class="space-y-3" id="cards-list">
+                    <!-- Card Item 1 - Learned -->
+                    <div class="bg-green-50 p-4 rounded-xl touch-feedback">
+                        <div class="flex items-start gap-3">
+                            <div class="w-10 h-10 bg-secondary rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="check" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-semibold text-sm mb-1">Что такое замыкание (closure)?</h4>
+                                <p class="text-foreground/60 text-xs">Повтор: 2 дня назад</p>
+                            </div>
+                            <span class="text-xs font-semibold text-secondary bg-secondary/10 px-2 py-1 rounded-full">✓</span>
+                        </div>
+                    </div>
+
+                    <!-- Card Item 2 - In Progress -->
+                    <div class="bg-amber-50 p-4 rounded-xl touch-feedback">
+                        <div class="flex items-start gap-3">
+                            <div class="w-10 h-10 bg-accent rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="clock" class="w-5 h-5 text-foreground"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-semibold text-sm mb-1">Разница между let, const и var</h4>
+                                <p class="text-foreground/60 text-xs">Требует повторения</p>
+                            </div>
+                            <span class="text-xs font-semibold text-accent bg-accent/10 px-2 py-1 rounded-full">!</span>
+                        </div>
+                    </div>
+
+                    <!-- Card Item 3 - New -->
+                    <div class="bg-blue-50 p-4 rounded-xl touch-feedback">
+                        <div class="flex items-start gap-3">
+                            <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-semibold text-sm mb-1">Что такое промисы (Promises)?</h4>
+                                <p class="text-foreground/60 text-xs">Новая карточка</p>
+                            </div>
+                            <span class="text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded-full">New</span>
+                        </div>
+                    </div>
+
+                    <!-- Card Item 4 - Learned -->
+                    <div class="bg-green-50 p-4 rounded-xl touch-feedback">
+                        <div class="flex items-start gap-3">
+                            <div class="w-10 h-10 bg-secondary rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="check" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-semibold text-sm mb-1">Как работает event loop?</h4>
+                                <p class="text-foreground/60 text-xs">Повтор: 5 дней назад</p>
+                            </div>
+                            <span class="text-xs font-semibold text-secondary bg-secondary/10 px-2 py-1 rounded-full">✓</span>
+                        </div>
+                    </div>
+
+                    <!-- Card Item 5 - New -->
+                    <div class="bg-blue-50 p-4 rounded-xl touch-feedback">
+                        <div class="flex items-start gap-3">
+                            <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-semibold text-sm mb-1">Методы массивов: map, filter, reduce</h4>
+                                <p class="text-foreground/60 text-xs">Новая карточка</p>
+                            </div>
+                            <span class="text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded-full">New</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- REVIEW SECTION -->
+        <section id="section-review" class="section-content hidden h-full flex flex-col">
+            <!-- Review Header -->
+            <div class="px-4 py-3 border-b border-border flex items-center justify-between">
+                <button onclick="showSection('themes')" class="p-2 -ml-2 touch-feedback">
+                    <i data-lucide="x" class="w-6 h-6 text-foreground/60"></i>
+                </button>
+                <div class="text-center">
+                    <p class="font-bold">7 / 24</p>
+                    <p class="text-xs text-foreground/60">карточек</p>
+                </div>
+                <button class="p-2 -mr-2 touch-feedback">
+                    <i data-lucide="settings" class="w-5 h-5 text-foreground/60"></i>
+                </button>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="h-1 bg-muted">
+                <div class="h-full bg-primary transition-all duration-500" style="width: 29%"></div>
+            </div>
+
+            <!-- Flashcard Area -->
+            <div class="flex-1 p-4 flex flex-col justify-center">
+                <div id="flashcard" class="flip-card w-full aspect-[3/4] max-h-[60vh] touch-feedback" onclick="flipCard()">
+                    <div class="flip-card-inner relative w-full h-full">
+                        <!-- Front Side -->
+                        <div class="flip-card-front absolute inset-0 bg-muted rounded-2xl p-6 flex flex-col items-center justify-center">
+                            <span class="bg-primary text-white text-xs font-semibold px-3 py-1 rounded-full mb-4">JavaScript</span>
+                            <h3 class="text-xl font-bold text-center tracking-tight leading-tight">Что такое замыкание (closure) в JavaScript?</h3>
+                            <p class="text-foreground/40 text-sm mt-6">Нажмите для ответа</p>
+                        </div>
+                        <!-- Back Side -->
+                        <div class="flip-card-back absolute inset-0 bg-secondary/10 rounded-2xl p-6 flex flex-col items-center justify-center overflow-y-auto">
+                            <span class="bg-secondary text-white text-xs font-semibold px-3 py-1 rounded-full mb-4">Ответ</span>
+                            <p class="text-base text-center leading-relaxed">
+                                <strong>Замыкание</strong> — это функция, которая запоминает своё лексическое окружение даже тогда, когда выполняется вне своей области видимости.
+                            </p>
+                            <div class="mt-4 p-3 bg-white rounded-lg text-left w-full">
+                                <code class="text-xs text-foreground/80 block">
+                                    function outer() {<br>
+                                    &nbsp;&nbsp;let count = 0;<br>
+                                    &nbsp;&nbsp;return function() {<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;return ++count;<br>
+                                    &nbsp;&nbsp;};<br>
+                                    }
+                                </code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rating Buttons -->
+            <div id="review-actions" class="hidden px-4 pb-6 safe-area-bottom">
+                <p class="text-center text-foreground/60 text-sm mb-3">Как хорошо вы знали ответ?</p>
+                <div class="grid grid-cols-4 gap-2">
+                    <button onclick="rateCard('again')" class="bg-rose-500 text-white p-3 rounded-xl font-semibold touch-feedback transition-transform flex flex-col items-center">
+                        <i data-lucide="x" class="w-5 h-5 mb-1"></i>
+                        <span class="text-xs">Снова</span>
+                    </button>
+                    <button onclick="rateCard('hard')" class="bg-amber-500 text-white p-3 rounded-xl font-semibold touch-feedback transition-transform flex flex-col items-center">
+                        <i data-lucide="frown" class="w-5 h-5 mb-1"></i>
+                        <span class="text-xs">Сложно</span>
+                    </button>
+                    <button onclick="rateCard('good')" class="bg-primary text-white p-3 rounded-xl font-semibold touch-feedback transition-transform flex flex-col items-center">
+                        <i data-lucide="smile" class="w-5 h-5 mb-1"></i>
+                        <span class="text-xs">Хорошо</span>
+                    </button>
+                    <button onclick="rateCard('easy')" class="bg-secondary text-white p-3 rounded-xl font-semibold touch-feedback transition-transform flex flex-col items-center">
+                        <i data-lucide="check-circle" class="w-5 h-5 mb-1"></i>
+                        <span class="text-xs">Легко</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tap hint (shown before flip) -->
+            <div id="tap-hint" class="px-4 pb-6 safe-area-bottom text-center">
+                <p class="text-foreground/40 text-sm">👆 Нажмите на карточку</p>
+            </div>
+        </section>
+
+        <!-- STATS SECTION -->
+        <section id="section-stats" class="section-content hidden h-full overflow-y-auto scroll-container hide-scrollbar pb-24">
+            <div class="px-4 py-4">
+                <h2 class="text-xl font-bold tracking-tight mb-4">Статистика</h2>
+
+                <!-- Main Stats Grid -->
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <div class="bg-primary p-4 rounded-xl">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i data-lucide="flame" class="w-5 h-5 text-white/80"></i>
+                            <span class="text-white/80 text-xs font-medium uppercase">Серия</span>
+                        </div>
+                        <p class="text-3xl font-bold text-white">14</p>
+                        <p class="text-white/60 text-xs">дней подряд</p>
+                    </div>
+                    <div class="bg-secondary p-4 rounded-xl">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-white/80"></i>
+                            <span class="text-white/80 text-xs font-medium uppercase">Сегодня</span>
+                        </div>
+                        <p class="text-3xl font-bold text-white">23</p>
+                        <p class="text-white/60 text-xs">карточек</p>
+                    </div>
+                    <div class="bg-accent p-4 rounded-xl">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i data-lucide="clock" class="w-5 h-5 text-foreground/60"></i>
+                            <span class="text-foreground/60 text-xs font-medium uppercase">Время</span>
+                        </div>
+                        <p class="text-3xl font-bold text-foreground">47<span class="text-lg">м</span></p>
+                        <p class="text-foreground/60 text-xs">сегодня</p>
+                    </div>
+                    <div class="bg-muted p-4 rounded-xl">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i data-lucide="target" class="w-5 h-5 text-foreground/60"></i>
+                            <span class="text-foreground/60 text-xs font-medium uppercase">Точность</span>
+                        </div>
+                        <p class="text-3xl font-bold text-foreground">89<span class="text-lg">%</span></p>
+                        <p class="text-foreground/60 text-xs">правильных</p>
+                    </div>
+                </div>
+
+                <!-- Weekly Activity -->
+                <div class="bg-muted p-4 rounded-xl mb-6">
+                    <h3 class="font-bold mb-4">Эта неделя</h3>
+                    <div class="flex items-end justify-between h-32 gap-2">
+                        <div class="flex-1 flex flex-col items-center gap-1">
+                            <div class="w-full bg-primary rounded-t-md" style="height: 60%"></div>
+                            <span class="text-xs font-medium text-foreground/60">Пн</span>
+                        </div>
+                        <div class="flex-1 flex flex-col items-center gap-1">
+                            <div class="w-full bg-primary rounded-t-md" style="height: 80%"></div>
+                            <span class="text-xs font-medium text-foreground/60">Вт</span>
+                        </div>
+                        <div class="flex-1 flex flex-col items-center gap-1">
+                            <div class="w-full bg-primary rounded-t-md" style="height: 45%"></div>
+                            <span class="text-xs font-medium text-foreground/60">Ср</span>
+                        </div>
+                        <div class="flex-1 flex flex-col items-center gap-1">
+                            <div class="w-full bg-primary rounded-t-md" style="height: 90%"></div>
+                            <span class="text-xs font-medium text-foreground/60">Чт</span>
+                        </div>
+                        <div class="flex-1 flex flex-col items-center gap-1">
+                            <div class="w-full bg-primary rounded-t-md" style="height: 70%"></div>
+                            <span class="text-xs font-medium text-foreground/60">Пт</span>
+                        </div>
+                        <div class="flex-1 flex flex-col items-center gap-1">
+                            <div class="w-full bg-primary rounded-t-md" style="height: 100%"></div>
+                            <span class="text-xs font-medium text-foreground/60">Сб</span>
+                        </div>
+                        <div class="flex-1 flex flex-col items-center gap-1">
+                            <div class="w-full bg-secondary rounded-t-md" style="height: 55%"></div>
+                            <span class="text-xs font-bold text-foreground">Вс</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between mt-4 pt-3 border-t border-border">
+                        <div>
+                            <p class="text-xs text-foreground/60">Всего за неделю</p>
+                            <p class="text-lg font-bold">156</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-foreground/60">В среднем</p>
+                            <p class="text-lg font-bold">22 / день</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Categories Distribution -->
+                <div class="bg-muted p-4 rounded-xl mb-6">
+                    <h3 class="font-bold mb-4">По темам</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm font-medium">JavaScript</span>
+                                <span class="text-sm font-bold text-primary">32%</span>
+                            </div>
+                            <div class="h-2 bg-white rounded-full overflow-hidden">
+                                <div class="h-full bg-primary rounded-full" style="width: 32%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm font-medium">Python</span>
+                                <span class="text-sm font-bold text-secondary">28%</span>
+                            </div>
+                            <div class="h-2 bg-white rounded-full overflow-hidden">
+                                <div class="h-full bg-secondary rounded-full" style="width: 28%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm font-medium">Английский</span>
+                                <span class="text-sm font-bold text-accent">25%</span>
+                            </div>
+                            <div class="h-2 bg-white rounded-full overflow-hidden">
+                                <div class="h-full bg-accent rounded-full" style="width: 25%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm font-medium">Другие</span>
+                                <span class="text-sm font-bold text-purple-600">15%</span>
+                            </div>
+                            <div class="h-2 bg-white rounded-full overflow-hidden">
+                                <div class="h-full bg-purple-600 rounded-full" style="width: 15%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Calendar (Simplified) -->
+                <div class="bg-muted p-4 rounded-xl">
+                    <h3 class="font-bold mb-3">Январь 2026</h3>
+                    <div class="grid grid-cols-7 gap-1.5">
+                        <!-- Day labels -->
+                        <div class="text-center text-xs font-medium text-foreground/40 pb-1">П</div>
+                        <div class="text-center text-xs font-medium text-foreground/40 pb-1">В</div>
+                        <div class="text-center text-xs font-medium text-foreground/40 pb-1">С</div>
+                        <div class="text-center text-xs font-medium text-foreground/40 pb-1">Ч</div>
+                        <div class="text-center text-xs font-medium text-foreground/40 pb-1">П</div>
+                        <div class="text-center text-xs font-medium text-foreground/40 pb-1">С</div>
+                        <div class="text-center text-xs font-medium text-foreground/40 pb-1">В</div>
+                        
+                        <!-- Empty offset cells -->
+                        <div></div><div></div>
+                        
+                        <!-- Days -->
+                        <div class="aspect-square bg-green-200 rounded-md flex items-center justify-center text-xs">1</div>
+                        <div class="aspect-square bg-green-400 rounded-md flex items-center justify-center text-xs">2</div>
+                        <div class="aspect-square bg-green-300 rounded-md flex items-center justify-center text-xs">3</div>
+                        <div class="aspect-square bg-green-500 rounded-md flex items-center justify-center text-xs text-white">4</div>
+                        <div class="aspect-square bg-green-200 rounded-md flex items-center justify-center text-xs">5</div>
+                        
+                        <div class="aspect-square bg-green-400 rounded-md flex items-center justify-center text-xs">6</div>
+                        <div class="aspect-square bg-green-300 rounded-md flex items-center justify-center text-xs">7</div>
+                        <div class="aspect-square bg-green-500 rounded-md flex items-center justify-center text-xs text-white">8</div>
+                        <div class="aspect-square bg-green-600 rounded-md flex items-center justify-center text-xs text-white">9</div>
+                        <div class="aspect-square bg-green-400 rounded-md flex items-center justify-center text-xs">10</div>
+                        <div class="aspect-square bg-green-300 rounded-md flex items-center justify-center text-xs">11</div>
+                        <div class="aspect-square bg-white rounded-md flex items-center justify-center text-xs text-foreground/30">12</div>
+                        
+                        <div class="aspect-square bg-green-200 rounded-md flex items-center justify-center text-xs">13</div>
+                        <div class="aspect-square bg-green-500 rounded-md flex items-center justify-center text-xs text-white">14</div>
+                        <div class="aspect-square bg-green-400 rounded-md flex items-center justify-center text-xs">15</div>
+                        <div class="aspect-square bg-green-600 rounded-md flex items-center justify-center text-xs text-white">16</div>
+                        <div class="aspect-square bg-green-500 rounded-md flex items-center justify-center text-xs text-white">17</div>
+                        <div class="aspect-square bg-green-300 rounded-md flex items-center justify-center text-xs">18</div>
+                        <div class="aspect-square bg-green-400 rounded-md flex items-center justify-center text-xs">19</div>
+                        
+                        <div class="aspect-square bg-green-500 rounded-md flex items-center justify-center text-xs text-white">20</div>
+                        <div class="aspect-square bg-green-400 rounded-md flex items-center justify-center text-xs">21</div>
+                        <div class="aspect-square bg-green-300 rounded-md flex items-center justify-center text-xs">22</div>
+                        <div class="aspect-square bg-green-400 rounded-md flex items-center justify-center text-xs">23</div>
+                        <div class="aspect-square bg-green-500 rounded-md flex items-center justify-center text-xs text-white">24</div>
+                        <div class="aspect-square bg-green-300 rounded-md flex items-center justify-center text-xs">25</div>
+                        <div class="aspect-square bg-primary rounded-md flex items-center justify-center text-xs font-bold text-white ring-2 ring-primary/30">26</div>
+                        
+                        <div class="aspect-square bg-white rounded-md flex items-center justify-center text-xs text-foreground/30">27</div>
+                        <div class="aspect-square bg-white rounded-md flex items-center justify-center text-xs text-foreground/30">28</div>
+                        <div class="aspect-square bg-white rounded-md flex items-center justify-center text-xs text-foreground/30">29</div>
+                        <div class="aspect-square bg-white rounded-md flex items-center justify-center text-xs text-foreground/30">30</div>
+                        <div class="aspect-square bg-white rounded-md flex items-center justify-center text-xs text-foreground/30">31</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PROFILE SECTION -->
+        <section id="section-profile" class="section-content hidden h-full overflow-y-auto scroll-container hide-scrollbar pb-24">
+            <div class="px-4 py-4">
+                <h2 class="text-xl font-bold tracking-tight mb-4">Профиль</h2>
+
+                <!-- User Card -->
+                <div class="bg-muted p-4 rounded-xl mb-6 flex items-center gap-4">
+                    <div class="w-16 h-16 bg-primary rounded-xl flex items-center justify-center text-2xl font-bold text-white flex-shrink-0">
+                        АИ
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-lg font-bold truncate">Алексей Иванов</h3>
+                        <p class="text-foreground/60 text-sm truncate">alexey.ivanov@email.com</p>
+                        <p class="text-foreground/40 text-xs mt-1">С декабря 2025</p>
+                    </div>
+                    <button class="p-2 touch-feedback">
+                        <i data-lucide="chevron-right" class="w-5 h-5 text-foreground/40"></i>
+                    </button>
+                </div>
+
+                <!-- Settings Groups -->
+                <div class="space-y-6">
+                    <!-- Learning Settings -->
+                    <div>
+                        <h3 class="text-sm font-semibold text-foreground/60 uppercase tracking-wider mb-3">Обучение</h3>
+                        <div class="bg-muted rounded-xl overflow-hidden">
+                            <div class="p-4 flex items-center justify-between border-b border-border">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                                        <i data-lucide="target" class="w-5 h-5 text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium">Дневная цель</p>
+                                        <p class="text-foreground/60 text-xs">карточек в день</p>
+                                    </div>
+                                </div>
+                                <span class="font-bold text-primary">20</span>
+                            </div>
+                            <div class="p-4 flex items-center justify-between border-b border-border">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                                        <i data-lucide="bell" class="w-5 h-5 text-secondary"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium">Напоминания</p>
+                                        <p class="text-foreground/60 text-xs">ежедневно в 09:00</p>
+                                    </div>
+                                </div>
+                                <div class="w-12 h-7 bg-secondary rounded-full relative">
+                                    <div class="absolute top-0.5 right-0.5 w-6 h-6 bg-white rounded-full"></div>
+                                </div>
+                            </div>
+                            <div class="p-4 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                                        <i data-lucide="moon" class="w-5 h-5 text-purple-600"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium">Тёмная тема</p>
+                                        <p class="text-foreground/60 text-xs">Внешний вид</p>
+                                    </div>
+                                </div>
+                                <div class="w-12 h-7 bg-gray-300 rounded-full relative">
+                                    <div class="absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Account Settings -->
+                    <div>
+                        <h3 class="text-sm font-semibold text-foreground/60 uppercase tracking-wider mb-3">Аккаунт</h3>
+                        <div class="bg-muted rounded-xl overflow-hidden">
+                            <button class="w-full p-4 flex items-center justify-between border-b border-border touch-feedback text-left">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                                        <i data-lucide="user" class="w-5 h-5 text-foreground/60"></i>
+                                    </div>
+                                    <span class="font-medium">Редактировать профиль</span>
+                                </div>
+                                <i data-lucide="chevron-right" class="w-5 h-5 text-foreground/40"></i>
+                            </button>
+                            <button class="w-full p-4 flex items-center justify-between border-b border-border touch-feedback text-left">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                                        <i data-lucide="send" class="w-5 h-5 text-foreground/60"></i>
+                                    </div>
+                                    <span class="font-medium">Подключить Telegram</span>
+                                </div>
+                                <i data-lucide="chevron-right" class="w-5 h-5 text-foreground/40"></i>
+                            </button>
+                            <button class="w-full p-4 flex items-center justify-between border-b border-border touch-feedback text-left">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                                        <i data-lucide="lock" class="w-5 h-5 text-foreground/60"></i>
+                                    </div>
+                                    <span class="font-medium">Сменить пароль</span>
+                                </div>
+                                <i data-lucide="chevron-right" class="w-5 h-5 text-foreground/40"></i>
+                            </button>
+                            <button class="w-full p-4 flex items-center justify-between touch-feedback text-left">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                                        <i data-lucide="download" class="w-5 h-5 text-foreground/60"></i>
+                                    </div>
+                                    <span class="font-medium">Экспорт данных</span>
+                                </div>
+                                <i data-lucide="chevron-right" class="w-5 h-5 text-foreground/40"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Support -->
+                    <div>
+                        <h3 class="text-sm font-semibold text-foreground/60 uppercase tracking-wider mb-3">Поддержка</h3>
+                        <div class="bg-muted rounded-xl overflow-hidden">
+                            <button class="w-full p-4 flex items-center justify-between border-b border-border touch-feedback text-left">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                                        <i data-lucide="help-circle" class="w-5 h-5 text-foreground/60"></i>
+                                    </div>
+                                    <span class="font-medium">Справка</span>
+                                </div>
+                                <i data-lucide="chevron-right" class="w-5 h-5 text-foreground/40"></i>
+                            </button>
+                            <button class="w-full p-4 flex items-center justify-between touch-feedback text-left">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                                        <i data-lucide="message-circle" class="w-5 h-5 text-foreground/60"></i>
+                                    </div>
+                                    <span class="font-medium">Связаться с нами</span>
+                                </div>
+                                <i data-lucide="chevron-right" class="w-5 h-5 text-foreground/40"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Logout -->
+                    <button class="w-full bg-rose-50 text-rose-600 p-4 rounded-xl font-semibold touch-feedback transition-transform flex items-center justify-center gap-2">
+                        <i data-lucide="log-out" class="w-5 h-5"></i>
+                        Выйти из аккаунта
+                    </button>
+
+                    <p class="text-center text-foreground/40 text-xs pb-4">MemoryFlow v1.0.0</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav fixed bottom-0 left-0 right-0 bg-white border-t-2 border-border px-2 pt-2 z-50">
+        <div class="flex items-center justify-around">
+            <button onclick="showSection('themes')" class="nav-btn flex-1 flex flex-col items-center py-2 touch-feedback" data-section="themes">
+                <i data-lucide="layers" class="w-6 h-6 text-primary"></i>
+                <span class="text-xs font-medium mt-1 text-primary">Темы</span>
+            </button>
+            <button onclick="showSection('review')" class="nav-btn flex-1 flex flex-col items-center py-2 touch-feedback" data-section="review">
+                <i data-lucide="repeat" class="w-6 h-6 text-foreground/40"></i>
+                <span class="text-xs font-medium mt-1 text-foreground/40">Повтор</span>
+            </button>
+            <button onclick="showSection('stats')" class="nav-btn flex-1 flex flex-col items-center py-2 touch-feedback" data-section="stats">
+                <i data-lucide="bar-chart-3" class="w-6 h-6 text-foreground/40"></i>
+                <span class="text-xs font-medium mt-1 text-foreground/40">Статистика</span>
+            </button>
+            <button onclick="showSection('profile')" class="nav-btn flex-1 flex flex-col items-center py-2 touch-feedback" data-section="profile">
+                <i data-lucide="user" class="w-6 h-6 text-foreground/40"></i>
+                <span class="text-xs font-medium mt-1 text-foreground/40">Профиль</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- MODALS -->
+    
+    <!-- Add Theme Modal (Bottom Sheet Style) -->
+    <div id="add-theme-modal" class="fixed inset-0 bg-foreground/50 z-50 hidden" onclick="if(event.target === this) closeModal('add-theme-modal')">
+        <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 safe-area-bottom modal-enter max-h-[90vh] overflow-y-auto">
+            <div class="w-12 h-1 bg-border rounded-full mx-auto mb-6"></div>
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold tracking-tight">Новая тема</h3>
+                <button onclick="closeModal('add-theme-modal')" class="p-2 hover:bg-muted rounded-lg touch-feedback">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-foreground/60">Название</label>
+                    <input type="text" placeholder="Например: React Hooks" class="w-full bg-muted px-4 py-3 rounded-xl focus:ring-2 focus:ring-primary focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-foreground/60">Описание</label>
+                    <textarea placeholder="Краткое описание..." rows="2" class="w-full bg-muted px-4 py-3 rounded-xl focus:ring-2 focus:ring-primary focus:outline-none resize-none"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-foreground/60">Цвет</label>
+                    <div class="flex gap-3">
+                        <button class="w-10 h-10 bg-blue-500 rounded-xl ring-4 ring-blue-200"></button>
+                        <button class="w-10 h-10 bg-green-500 rounded-xl"></button>
+                        <button class="w-10 h-10 bg-amber-500 rounded-xl"></button>
+                        <button class="w-10 h-10 bg-purple-500 rounded-xl"></button>
+                        <button class="w-10 h-10 bg-rose-500 rounded-xl"></button>
+                        <button class="w-10 h-10 bg-cyan-500 rounded-xl"></button>
+                    </div>
+                </div>
+            </div>
+            <button onclick="closeModal('add-theme-modal')" class="w-full bg-primary text-white py-4 rounded-xl font-semibold mt-6 touch-feedback">
+                Создать тему
+            </button>
+        </div>
+    </div>
+
+    <!-- Add Card Modal -->
+    <div id="add-card-modal" class="fixed inset-0 bg-foreground/50 z-50 hidden" onclick="if(event.target === this) closeModal('add-card-modal')">
+        <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 safe-area-bottom modal-enter max-h-[90vh] overflow-y-auto">
+            <div class="w-12 h-1 bg-border rounded-full mx-auto mb-6"></div>
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold tracking-tight">Новая карточка</h3>
+                <button onclick="closeModal('add-card-modal')" class="p-2 hover:bg-muted rounded-lg touch-feedback">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-foreground/60">Вопрос</label>
+                    <textarea placeholder="Введите вопрос или термин..." rows="3" class="w-full bg-muted px-4 py-3 rounded-xl focus:ring-2 focus:ring-primary focus:outline-none resize-none"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-foreground/60">Ответ</label>
+                    <textarea placeholder="Введите ответ или определение..." rows="4" class="w-full bg-muted px-4 py-3 rounded-xl focus:ring-2 focus:ring-primary focus:outline-none resize-none"></textarea>
+                </div>
+            </div>
+            <button onclick="closeModal('add-card-modal')" class="w-full bg-primary text-white py-4 rounded-xl font-semibold mt-6 touch-feedback">
+                Добавить карточку
+            </button>
+        </div>
+    </div>
+
+    <!-- AI Generate Modal -->
+    <div id="ai-generate-modal" class="fixed inset-0 bg-foreground/50 z-50 hidden" onclick="if(event.target === this) closeModal('ai-generate-modal'); resetAIModal();">
+        <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 safe-area-bottom modal-enter max-h-[90vh] overflow-y-auto">
+            <div class="w-12 h-1 bg-border rounded-full mx-auto mb-6"></div>
+            
+            <!-- Step 1: Input -->
+            <div id="ai-step-1">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center">
+                        <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold">Создать с ИИ</h3>
+                        <p class="text-foreground/60 text-xs">Вставьте текст для генерации</p>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <textarea id="ai-source-text" placeholder="Вставьте сюда текст из учебника, статьи или конспекта..." rows="6" class="w-full bg-muted px-4 py-3 rounded-xl focus:ring-2 focus:ring-purple-600 focus:outline-none resize-none"></textarea>
+                        <p id="char-count" class="text-xs text-foreground/40 mt-1 text-right">0 символов</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold mb-1 text-foreground/60">Карточек</label>
+                            <select id="ai-card-count" class="w-full bg-muted px-3 py-2.5 rounded-xl text-sm">
+                                <option value="5">5</option>
+                                <option value="10" selected>10</option>
+                                <option value="15">15</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1 text-foreground/60">Сложность</label>
+                            <select id="ai-difficulty" class="w-full bg-muted px-3 py-2.5 rounded-xl text-sm">
+                                <option value="easy">Базовый</option>
+                                <option value="medium" selected>Средний</option>
+                                <option value="hard">Сложный</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="generateCards()" class="w-full bg-purple-600 text-white py-4 rounded-xl font-semibold mt-6 touch-feedback flex items-center justify-center gap-2">
+                    <i data-lucide="wand-2" class="w-5 h-5"></i>
+                    Сгенерировать
+                </button>
+            </div>
+
+            <!-- Step 2: Loading -->
+            <div id="ai-step-2" class="hidden">
+                <div class="py-12 text-center">
+                    <div class="relative w-20 h-20 mx-auto mb-6">
+                        <div class="absolute inset-0 bg-purple-200 rounded-full animate-ping"></div>
+                        <div class="relative w-20 h-20 bg-purple-600 rounded-full flex items-center justify-center">
+                            <i data-lucide="sparkles" class="w-8 h-8 text-white animate-pulse"></i>
+                        </div>
+                    </div>
+                    <h4 class="text-xl font-bold mb-2">Анализируем текст...</h4>
+                    <p class="text-foreground/60 text-sm mb-4">Создаём карточки</p>
+                    <div class="max-w-xs mx-auto">
+                        <div class="h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div id="ai-progress-bar" class="h-full bg-purple-600 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Results -->
+            <div id="ai-step-3" class="hidden">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-6 bg-secondary rounded-full flex items-center justify-center">
+                            <i data-lucide="check" class="w-3 h-3 text-white"></i>
+                        </div>
+                        <span class="font-semibold text-secondary">Готово: <span id="generated-count">10</span> карточек</span>
+                    </div>
+                    <button onclick="regenerateCards()" class="text-purple-600 text-sm font-medium touch-feedback flex items-center gap-1">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                        Заново
+                    </button>
+                </div>
+                
+                <div id="generated-cards-list" class="space-y-2 max-h-[40vh] overflow-y-auto">
+                    <!-- Generated cards will be inserted here -->
+                </div>
+                
+                <div class="flex gap-3 mt-4 pt-4 border-t border-border">
+                    <button onclick="goToStep(1)" class="flex-1 bg-muted text-foreground py-3 rounded-xl font-semibold touch-feedback">
+                        Назад
+                    </button>
+                    <button onclick="saveGeneratedCards()" class="flex-1 bg-secondary text-white py-3 rounded-xl font-semibold touch-feedback">
+                        Добавить все
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Modal -->
+    <div id="notifications-modal" class="fixed inset-0 bg-foreground/50 z-50 hidden" onclick="if(event.target === this) closeModal('notifications-modal')">
+        <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 safe-area-bottom modal-enter max-h-[70vh] overflow-y-auto">
+            <div class="w-12 h-1 bg-border rounded-full mx-auto mb-6"></div>
+            <h3 class="text-xl font-bold tracking-tight mb-4">Уведомления</h3>
+            
+            <div class="space-y-3">
+                <div class="bg-primary/10 p-4 rounded-xl flex items-start gap-3">
+                    <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="bell" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-sm">Время повторять!</p>
+                        <p class="text-foreground/60 text-xs">24 карточки ждут вашего внимания</p>
+                        <p class="text-foreground/40 text-xs mt-1">5 минут назад</p>
+                    </div>
+                </div>
+                
+                <div class="bg-muted p-4 rounded-xl flex items-start gap-3">
+                    <div class="w-10 h-10 bg-secondary rounded-xl flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="trophy" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-sm">Новое достижение! 🎉</p>
+                        <p class="text-foreground/60 text-xs">Серия 14 дней подряд</p>
+                        <p class="text-foreground/40 text-xs mt-1">Вчера</p>
+                    </div>
+                </div>
+                
+                <div class="bg-muted p-4 rounded-xl flex items-start gap-3">
+                    <div class="w-10 h-10 bg-accent rounded-xl flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="zap" class="w-5 h-5 text-foreground"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-sm">Отличная работа!</p>
+                        <p class="text-foreground/60 text-xs">Вы изучили 50 карточек за сегодня</p>
+                        <p class="text-foreground/40 text-xs mt-1">2 дня назад</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Navigation
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.section-content').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Show target section
+            const targetSection = document.getElementById('section-' + sectionId);
+            if (targetSection) {
+                targetSection.classList.remove('hidden');
+            }
+
+            // Update bottom nav
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                const icon = btn.querySelector('i');
+                const text = btn.querySelector('span');
+                if (btn.dataset.section === sectionId) {
+                    icon.classList.remove('text-foreground/40');
+                    icon.classList.add('text-primary');
+                    text.classList.remove('text-foreground/40');
+                    text.classList.add('text-primary');
+                } else {
+                    icon.classList.remove('text-primary');
+                    icon.classList.add('text-foreground/40');
+                    text.classList.remove('text-primary');
+                    text.classList.add('text-foreground/40');
+                }
+            });
+
+            // Reset card state when entering review
+            if (sectionId === 'review') {
+                resetCardState();
+            }
+
+            lucide.createIcons();
+        }
+
+        // Open theme detail
+        function openTheme(themeId) {
+            showSection('theme-detail');
+        }
+
+        // Start review
+        function startReview() {
+            showSection('review');
+        }
+
+        // Reset card state
+        function resetCardState() {
+            const flashcard = document.getElementById('flashcard');
+            const actions = document.getElementById('review-actions');
+            const hint = document.getElementById('tap-hint');
+            
+            flashcard.classList.remove('flipped');
+            actions.classList.add('hidden');
+            hint.classList.remove('hidden');
+            cardFlipped = false;
+        }
+
+        // Flip card
+        let cardFlipped = false;
+        function flipCard() {
+            const flashcard = document.getElementById('flashcard');
+            const actions = document.getElementById('review-actions');
+            const hint = document.getElementById('tap-hint');
+            
+            if (!cardFlipped) {
+                flashcard.classList.add('flipped');
+                actions.classList.remove('hidden');
+                hint.classList.add('hidden');
+                cardFlipped = true;
+            }
+        }
+
+        // Rate card
+        function rateCard(rating) {
+            resetCardState();
+            
+            // Add haptic feedback simulation
+            const flashcard = document.getElementById('flashcard');
+            flashcard.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                flashcard.style.transform = '';
+            }, 150);
+        }
+
+        // Modal functions
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            lucide.createIcons();
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        // Character count for AI text input
+        document.getElementById('ai-source-text')?.addEventListener('input', function() {
+            document.getElementById('char-count').textContent = this.value.length + ' символов';
+        });
+
+        // AI Generation Steps
+        function goToStep(step) {
+            document.getElementById('ai-step-1').classList.add('hidden');
+            document.getElementById('ai-step-2').classList.add('hidden');
+            document.getElementById('ai-step-3').classList.add('hidden');
+            document.getElementById('ai-step-' + step).classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function resetAIModal() {
+            goToStep(1);
+            document.getElementById('ai-source-text').value = '';
+            document.getElementById('char-count').textContent = '0 символов';
+            document.getElementById('ai-progress-bar').style.width = '0%';
+        }
+
+        // Simulate AI card generation
+        function generateCards() {
+            const text = document.getElementById('ai-source-text').value;
+            if (text.length < 50) {
+                alert('Введите больше текста (минимум 50 символов)');
+                return;
+            }
+            
+            goToStep(2);
+            
+            const progressBar = document.getElementById('ai-progress-bar');
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 20;
+                progressBar.style.width = progress + '%';
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => showGeneratedCards(), 300);
+                }
+            }, 400);
+        }
+
+        function regenerateCards() {
+            goToStep(2);
+            document.getElementById('ai-progress-bar').style.width = '0%';
+            setTimeout(() => generateCards(), 100);
+        }
+
+        // Mock generated cards
+        const mockGeneratedCards = [
+            { question: 'Что такое переменная?', answer: 'Именованная область памяти для хранения данных' },
+            { question: 'Типы данных в JavaScript?', answer: 'string, number, boolean, null, undefined, object' },
+            { question: 'Что такое функция?', answer: 'Блок кода, который можно вызывать многократно' },
+            { question: 'Чем отличается let от const?', answer: 'const нельзя переприсвоить после инициализации' },
+            { question: 'Что такое массив?', answer: 'Упорядоченная коллекция элементов' },
+        ];
+
+        function showGeneratedCards() {
+            goToStep(3);
+            const container = document.getElementById('generated-cards-list');
+            const count = parseInt(document.getElementById('ai-card-count').value);
+            document.getElementById('generated-count').textContent = Math.min(count, mockGeneratedCards.length);
+            
+            container.innerHTML = mockGeneratedCards.slice(0, count).map((card, index) => `
+                <div class="bg-purple-50 p-3 rounded-xl">
+                    <div class="flex items-start gap-2">
+                        <div class="w-6 h-6 bg-purple-600 rounded-lg flex items-center justify-center flex-shrink-0 text-white font-bold text-xs">
+                            ${index + 1}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-semibold text-sm">${card.question}</p>
+                            <p class="text-xs text-foreground/60 mt-1">${card.answer}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            lucide.createIcons();
+        }
+
+        function saveGeneratedCards() {
+            const count = document.querySelectorAll('#generated-cards-list > div').length;
+            alert(`Добавлено ${count} карточек!`);
+            closeModal('ai-generate-modal');
+            resetAIModal();
+        }
+
+        // Initialize with themes section active
+        showSection('themes');
+
+        // Prevent overscroll/bounce on iOS
+        document.body.addEventListener('touchmove', function(e) {
+            if (e.target.closest('.scroll-container') || e.target.closest('.overflow-y-auto')) {
+                return;
+            }
+            e.preventDefault();
+        }, { passive: false });
+    </script>
+</body>
+</html>
