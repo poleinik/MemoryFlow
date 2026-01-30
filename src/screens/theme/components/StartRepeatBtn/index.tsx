@@ -1,12 +1,14 @@
-import { TouchableOpacity, View, Text } from 'react-native'
+import React from 'react'
+import { View, Text } from 'react-native'
 import PlayIcon from 'assets/PlayIcon'
 import { Colors, FontWeights, TextSizes } from 'src/styles'
 import styles from './styles'
 import LinearGradient from 'react-native-linear-gradient'
 import ChevronRightIcon from 'assets/ChevronRightIcon'
+import TouchableScale from 'src/components/TouchableScale'
 export function StartButton(){
     return(
-        <TouchableOpacity >
+        <TouchableScale activeScale={0.95}>
 
  <LinearGradient style={styles.button} colors={['#3B82F6', '#2563eb']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
     <View style={styles.content}>
@@ -23,11 +25,10 @@ export function StartButton(){
                 </Text>
             </View>
         </View>
-
             <ChevronRightIcon color='rgb(255 255 255 / 0.6)' />
     </View>
           
             </LinearGradient>
-        </TouchableOpacity>
+        </TouchableScale>
     )
 }

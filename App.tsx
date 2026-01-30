@@ -21,6 +21,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import ThemeIcon from 'assets/ThemeIcon';
 import RepeatIcon from 'assets/RepeatIcon';
 import BarChartIcon from 'assets/BarChartIcon';
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
+import { Host } from 'react-native-portalize';
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
@@ -95,11 +97,13 @@ function RootTabs() {
 
 function AppContent() {
   return (
-    <View style={styles.container}>
-      <NavigationContainer>
-        <RootTabs />
-      </NavigationContainer>
-    </View>
+      <GestureHandlerRootView style={styles.container}>
+      <Host>
+        <NavigationContainer>
+          <RootTabs />
+        </NavigationContainer>
+      </Host>
+      </GestureHandlerRootView>
   );
 }
 
