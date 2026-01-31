@@ -2,7 +2,7 @@ import React, {useRef, useState} from 'react';
 import { Animated, TouchableOpacity, PressableProps, StyleProp, ViewStyle, GestureResponderEvent } from 'react-native';
 
 type TouchableScaleProps = PressableProps & {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   activeScale?: number;
   style?: StyleProp<ViewStyle>;
 };

@@ -7,12 +7,15 @@ import { Modalize } from 'react-native-modalize';
 import { Portal } from 'react-native-portalize';
 import { useRef } from 'react';
 import XIcon from 'assets/XIcon';
+import { InputWithLabel } from 'src/components/InputWithLabel';
+import { Modal, ModalHandle } from 'src/components/Modal';
+import { CreateThemeModal } from '../CreateThemeModal';
 
 export function ThemeBoard() {
     const themes = []; // Пока пустой массив тем
- const modalRef = useRef<Modalize>(null);
-  const openModal = () => modalRef?.current?.open();
-  const closeModal = () => modalRef?.current?.close();
+ const modalRef = useRef<ModalHandle>(null);
+  const openModal = () => modalRef?.current?.openModal();
+  const closeModal = () => modalRef?.current?.closeModal();
     return (
         <View>
         <View style={{display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16}}>
@@ -24,24 +27,9 @@ export function ThemeBoard() {
             </TouchableScale>
         </View>
           <Portal>
-            <Modalize ref={modalRef} adjustToContentHeight={true} >
-              <View style={{display: 'flex', flexDirection:'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, marginBottom: 12}}>
-                <Text style={{...TextSizes.xlarge, fontWeight: FontWeights.bold}}>
-                  Новая тема
-                </Text>
-                <TouchableOpacity onPress={closeModal} style={{backgroundColor: Colors.backgroundPrimary, padding: 12, borderRadius: 8, alignItems: 'center'}}>
-                    <XIcon color={'black'} />
-                </TouchableOpacity>
-              </View>
-              <Text>Название</Text>
-              <TextInput
-                placeholder="Например: Биология"
-                />
-                <Text>Описание</Text>
-                <TextInput
-                placeholder="Краткое описание..."
-                />
-            </Modalize>
+            <Modal ref={modalRef}>
+            <CreateThemeModal closeModal={closeModal} />
+            </Modal>
           </Portal>
         <View style={{display: 'flex', flexDirection: 'column', flexGrow: 1, minHeight: 200}}>
             {themes.length === 0 ? (
