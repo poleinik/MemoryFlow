@@ -10,6 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@nozbe/watermelondb": "^0.28.0",
     "@react-native/new-app-screen": "0.83.1",
     "@react-navigation/bottom-tabs": "^7.10.1",
     "@react-navigation/native": "^7.1.28",
@@ -22,10 +23,12 @@
     "react-native-portalize": "^1.0.7",
     "react-native-safe-area-context": "^5.6.2",
     "react-native-screens": "^4.20.0",
-    "react-native-svg": "^15.15.1"
+    "react-native-svg": "^15.15.1",
+    "supermemo": "^2.0.23"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@babel/plugin-proposal-decorators": "^7.29.0",
     "@babel/preset-env": "^7.25.3",
     "@babel/runtime": "^7.25.0",
     "@react-native-community/cli": "^20.1.0",

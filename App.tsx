@@ -23,15 +23,18 @@ import RepeatIcon from 'assets/RepeatIcon';
 import BarChartIcon from 'assets/BarChartIcon';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import { Host } from 'react-native-portalize';
-
+import { DatabaseProvider } from '@nozbe/watermelondb/DatabaseProvider';
+import { database } from './src/model';
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
 
   return (
-    <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
-    </SafeAreaProvider>
+    <DatabaseProvider database={database}>
+      <SafeAreaProvider>
+        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+        <AppContent />
+      </SafeAreaProvider>
+    </DatabaseProvider>
   );
 }
 

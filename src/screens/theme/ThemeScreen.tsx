@@ -3,13 +3,26 @@ import { Colors } from "../../styles";
 import { TodayBoard } from "./components/TodayBoard/Board";
 import { StartButton } from "./components/StartRepeatBtn";
 import { ThemeBoard } from "./components/ThemeBoard";
-import { useRef } from "react";
-import BottomSheet, { BottomSheetRef } from "src/components/BottomSheet";
+import { useEffect, useRef } from "react";
 import { Modalize } from "react-native-modalize";
+import { database } from "src/model";
+import { unsafeSqlQuery } from "@nozbe/watermelondb/QueryDescription/operators";
 
 export function ThemeScreen() {
 const modalRef = useRef<Modalize>(null);
   const openModal = () => modalRef?.current?.open();
+
+async function logDbVersion() {
+  const rows: any[] = await database.adapter.unsafeQueryRaw(
+    unsafeSqlQuery('pragma user_version'),
+  )
+  const v = rows?.[0]?.user_version ?? rows?.[0]?.[0]
+  console.log('SQLite user_version =', v)
+}
+  useEffect(() => {
+    logDbVersion()
+
+  },[]);
     return (
         <View style={{flex: 1, flexDirection: 'column', justifyContent: 'flex-start',  padding: 16, backgroundColor: Colors.backgroundPrimary, gap: 24}}>
           <TodayBoard />
