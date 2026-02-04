@@ -1,5 +1,5 @@
 import { Model } from '@nozbe/watermelondb'
-import { Associations } from '@nozbe/watermelondb/Model'
+import type { Associations } from '@nozbe/watermelondb/Model'
 import { date, text, field, immutableRelation } from '@nozbe/watermelondb/decorators'
 import Theme from './Themes'
 
@@ -7,7 +7,7 @@ export default class Card extends Model {
   static table = 'cards'
 
    static associations: Associations = {
-      comments: { type: 'belongs_to', key: 'theme_id' },
+      themes: { type: 'belongs_to', key: 'theme_id' },
     }
 
     @text('question') question!: string

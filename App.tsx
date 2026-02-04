@@ -28,6 +28,7 @@ import { database } from './src/model';
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
 
+  console.log('Database initialized:', database);
   return (
     <DatabaseProvider database={database}>
       <SafeAreaProvider>

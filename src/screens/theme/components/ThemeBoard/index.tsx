@@ -3,17 +3,22 @@ import EmptyThemesIcon from 'assets/EmptyThemesIcon';
 import { Colors, TextSizes, FontWeights } from 'src/styles';
 import PlusIcon from 'assets/PlusIcon';
 import TouchableScale from 'src/components/TouchableScale';
-import { Modalize } from 'react-native-modalize';
 import { Portal } from 'react-native-portalize';
-import { useRef } from 'react';
-import XIcon from 'assets/XIcon';
-import { InputWithLabel } from 'src/components/InputWithLabel';
+import {  useEffect, useRef, useState } from 'react';
 import { Modal, ModalHandle } from 'src/components/Modal';
 import { CreateThemeModal } from '../CreateThemeModal';
+import { useFetchThemes } from '../../../../api/useFetchThemes';
+import { ThemeCard } from '../ThemeCard';
+import { useGetThemes } from 'src/hooks/useGetThemes';
+import { FlatList } from 'react-native-gesture-handler';
+import styles from '../TodayBoard/styles';
 
 export function ThemeBoard() {
-    const themes = []; // Пока пустой массив тем
- const modalRef = useRef<ModalHandle>(null);
+  const { themes, fetch } = useGetThemes();
+   useEffect(() => {
+        fetch();
+    }, []);
+  const modalRef = useRef<ModalHandle>(null);
   const openModal = () => modalRef?.current?.openModal();
   const closeModal = () => modalRef?.current?.closeModal();
     return (
@@ -59,9 +64,14 @@ export function ThemeBoard() {
                 </Text>
             </View>
         )    : (
-            <View>
-                {/* Здесь будет отображение тем */}
-            </View>
+            <FlatList
+                data={themes}
+                contentContainerStyle={styles.wrapper}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={({ item }) => (
+                    <ThemeCard color={item.color} icon={item.icon} title={item.title} description={item.description} />
+                )}
+            />
         )}
         </View>
         </View>

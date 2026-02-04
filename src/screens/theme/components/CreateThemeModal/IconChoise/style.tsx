@@ -9,14 +9,18 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     button: {
-
-        width: 40, height: 40, borderRadius: 12
-        
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: Colors.backgroundSecondary,
+        width: 48, height: 48, borderRadius: 12, 
+    
     },
     active:{
+        backgroundColor: Colors.primary,
         boxShadow: `inset 0 0 0 4px rgba(255,255,255,0.7)`,
     },
-    paletteContainer: {
+    iconContainer: {
         display: 'flex',
         flexDirection: 'row',
         alignItems: 'center',
