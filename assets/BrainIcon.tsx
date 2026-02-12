@@ -1,5 +1,5 @@
-import React from 'react'
-import { SvgXml } from 'react-native-svg'
+import React from 'react';
+import { SvgXml } from 'react-native-svg';
 
 const xml = `
 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="brain" aria-hidden="true">
@@ -12,15 +12,19 @@ const xml = `
 	<path d="M6 18a4 4 0 0 1-2-7.464"></path>
 	<path d="M6.003 5.125a4 4 0 0 0-2.526 5.77"></path>
 </svg>
-`
+`;
 
 type Props = {
-	width?: number | string
-	height?: number | string
-	color?: string
-}
+  width?: number | string;
+  height?: number | string;
+  color?: string;
+};
 
-export default function BrainIcon({ width = 24, height = 24, color = 'currentColor' }: Props) {
-	const svg = xml.replace(/currentColor/g, color)
-	return <SvgXml xml={svg} width={width} height={height} />
+export default function BrainIcon({
+  width = 24,
+  height = 24,
+  color = 'currentColor',
+}: Props) {
+  const svg = xml.replace(/currentColor/g, color);
+  return <SvgXml xml={svg} width={width} height={height} />;
 }

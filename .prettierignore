@@ -1,0 +1,23 @@
+# Dependencies
+node_modules
+
+# Android / Gradle
+android/**/build
+android/.gradle
+
+# iOS / CocoaPods
+ios/Pods
+ios/build
+
+# Generic build artifacts
+build
+dist
+coverage
+
+# Logs
+*.log
+
+# Common generated folders
+**/generated
+**/intermediates
+**/outputs

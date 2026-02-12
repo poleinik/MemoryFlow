@@ -12,13 +12,13 @@ const srcPath = path.resolve(projectRoot, 'src');
 const assetsPath = path.resolve(projectRoot, 'assets');
 
 const config = {
-	resolver: {
-		extraNodeModules: {
-			src: srcPath,
-			assets: assetsPath,
-		},
-	},
-	watchFolders: [srcPath, assetsPath],
+  resolver: {
+    extraNodeModules: {
+      src: srcPath,
+      assets: assetsPath,
+    },
+  },
+  watchFolders: [srcPath, assetsPath],
 };
 
 module.exports = mergeConfig(getDefaultConfig(__dirname), config);

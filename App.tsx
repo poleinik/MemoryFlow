@@ -5,7 +5,13 @@
  * @format
  */
 
-import { StatusBar, StyleSheet, useColorScheme, View, Text } from 'react-native';
+import {
+  StatusBar,
+  StyleSheet,
+  useColorScheme,
+  View,
+  Text,
+} from 'react-native';
 import {
   SafeAreaProvider,
   useSafeAreaInsets,
@@ -18,13 +24,16 @@ import { RepeatScreen } from './src/screens/repeat/RepeatScreen';
 import { ProfileScreen } from './src/screens/profile/ProfileScreen';
 import UserIcon from 'assets/UserIcon';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
 import ThemeIcon from 'assets/ThemeIcon';
 import RepeatIcon from 'assets/RepeatIcon';
 import BarChartIcon from 'assets/BarChartIcon';
-import {GestureHandlerRootView} from 'react-native-gesture-handler';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Host } from 'react-native-portalize';
 import { DatabaseProvider } from '@nozbe/watermelondb/DatabaseProvider';
 import { database } from './src/model';
+import { ThemeDetailScreen } from 'src/screens/themeDetail/ThemeDetailScreen';
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
 
@@ -38,16 +47,32 @@ function App() {
     </DatabaseProvider>
   );
 }
+const Stack = createNativeStackNavigator();
+const Tabs = createBottomTabNavigator();
 
-const Tabs = createBottomTabNavigator()
-
+function ThemeStack() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen
+        name="ThemeMain"
+        component={ThemeScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ThemeDetail"
+        component={ThemeDetailScreen}
+        options={{ headerShown: false }}
+      />
+    </Stack.Navigator>
+  );
+}
 function RootTabs() {
-    const safeAreaInsets = useSafeAreaInsets();
+  const safeAreaInsets = useSafeAreaInsets();
   return (
     <Tabs.Navigator
       initialRouteName="Theme"
       screenOptions={({ navigation, route }) => ({
-        header: (props) => <Header />,
+        header: props => <Header />,
         tabBarActiveTintColor: '#3b82f6',
         tabBarInactiveTintColor: 'gray',
         tabBarStyle: {
@@ -61,53 +86,57 @@ function RootTabs() {
     >
       <Tabs.Screen
         name="Theme"
-        component={ThemeScreen}
+        component={ThemeStack}
         options={{
           tabBarLabel: 'Темы',
-          tabBarIcon: ({ color, size }) => <ThemeIcon width={size} height={size} color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <ThemeIcon width={size} height={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="Repeat"
         component={RepeatScreen}
         options={{
-        
           tabBarLabel: 'Повтор',
-          tabBarIcon: ({ color, size }) => <RepeatIcon width={size} height={size} color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <RepeatIcon width={size} height={size} color={color} />
+          ),
         }}
       />
-        <Tabs.Screen
+      <Tabs.Screen
         name="Statistic"
         component={StatisticScreen}
         options={{
-        
           tabBarLabel: 'Статистика',
-          tabBarIcon: ({ color, size }) => <BarChartIcon width={size} height={size} color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <BarChartIcon width={size} height={size} color={color} />
+          ),
         }}
       />
-         <Tabs.Screen
+      <Tabs.Screen
         name="Profile"
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Профиль',
-          tabBarIcon: ({ color, size }) => <UserIcon width={size} height={size} color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <UserIcon width={size} height={size} color={color} />
+          ),
         }}
       />
-  
     </Tabs.Navigator>
   );
 }
 
-
 function AppContent() {
   return (
-      <GestureHandlerRootView style={styles.container}>
+    <GestureHandlerRootView style={styles.container}>
       <Host>
         <NavigationContainer>
           <RootTabs />
         </NavigationContainer>
       </Host>
-      </GestureHandlerRootView>
+    </GestureHandlerRootView>
   );
 }
 

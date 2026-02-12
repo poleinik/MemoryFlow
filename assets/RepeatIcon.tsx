@@ -1,21 +1,26 @@
-import React from 'react'
-import { SvgXml } from 'react-native-svg'
+import React from 'react';
+import { SvgXml } from 'react-native-svg';
 
 const xml = `
 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" >
 <path d="m17 2 4 4-4 4"></path><path d="M3 11v-1a4 4 0 0 1 4-4h14"></path>
 <path d="m7 22-4-4 4-4"></path><path d="M21 13v1a4 4 0 0 1-4 4H3"></path>
 </svg>
-`
+`;
 
 type Props = {
-    width?: number | string
-    height?: number | string
-    color?: string
-    size?: number | string
-}
+  width?: number | string;
+  height?: number | string;
+  color?: string;
+  size?: number | string;
+};
 
-export default function RepeatIcon({ width = 24, height = 24, size, color = 'currentColor' }: Props) {
-    const svg = xml.replace(/currentColor/g, color)
-    return <SvgXml xml={svg} width={width || size} height={height || size} />
+export default function RepeatIcon({
+  width = 24,
+  height = 24,
+  size,
+  color = 'currentColor',
+}: Props) {
+  const svg = xml.replace(/currentColor/g, color);
+  return <SvgXml xml={svg} width={width || size} height={height || size} />;
 }
