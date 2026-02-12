@@ -3,11 +3,11 @@ import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Colors, FontWeights, layout, TextSizes } from 'src/styles';
 import ArrowBackIcon from 'assets/ArrowBackIcon';
-import BrainSparklesIcon from 'assets/BrainSparklesIcon';
 import { useGetTheme } from '../../hooks/useGetTheme';
 import { useEffect } from 'react';
 import { Progress } from './components/Progress';
 import { styles } from './styles';
+import { AICreateBtn } from './components/AICreation';
 import { Portal } from 'react-native-portalize';
 import { Modal, ModalHandle } from 'src/components/Modal';
 import TouchableScale from 'src/components/TouchableScale';
@@ -36,10 +36,6 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
     console.log('Текущая тема в ThemeDetailScreen', theme, cards);
   }, [theme, cards]);
 
-  const handleAIGeneratePress = () => {
-    // TODO: Открыть модальное окно для создания карточек с ИИ
-    console.log('Открыть AI генератор карточек');
-  };
 
   return (
     <View style={layout.container}>
@@ -139,17 +135,12 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
       </View>
 
       {/* Плавающая кнопка для генерации карточек с ИИ */}
-      <TouchableOpacity
-        style={styles.fab}
-        activeOpacity={0.8}
-        onPress={handleAIGeneratePress}
-      >
-        <BrainSparklesIcon width={28} height={28} />
-      </TouchableOpacity>
+     <AICreateBtn />
       <Portal>
         <Modal ref={modalRef}>
           <CreateCardModal closeModal={closeModal} />
         </Modal>
+      
       </Portal>
     </View>
   );
