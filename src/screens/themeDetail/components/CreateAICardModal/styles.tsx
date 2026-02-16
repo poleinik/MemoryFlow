@@ -1,0 +1,85 @@
+import { StyleSheet } from 'react-native';
+import { Colors, FontWeights, TextSizes } from 'src/styles';
+
+export const styles = StyleSheet.create({
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 16,
+    paddingHorizontal: 4,
+  },
+  headerRow: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  iconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: Colors.backgroundAccent3,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTextWrap: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+    flexShrink: 1,
+  },
+  title: {
+    ...TextSizes.large,
+    fontWeight: FontWeights.bold,
+    color: Colors.textPrimary,
+  },
+  subtitle: {
+    ...TextSizes.xsmall,
+    fontWeight: FontWeights.regular,
+    color: Colors.textForeground,
+  },
+  fieldWrap: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  input: {
+    minHeight: 132,
+    borderRadius: 12,
+    backgroundColor: Colors.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
+    color: Colors.textPrimary,
+    ...TextSizes.small,
+    fontWeight: FontWeights.regular,
+  },
+  inputFocused: {
+    borderColor: Colors.backgroundAccent3,
+  },
+  counter: {
+    marginTop: 6,
+    textAlign: 'right',
+    ...TextSizes.xsmall,
+    fontWeight: FontWeights.regular,
+    color: Colors.textForeground,
+  },
+  generateButton: {
+    backgroundColor: Colors.backgroundAccent3,
+    borderRadius: 12,
+    minHeight: 52,
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  generateButtonText: {
+    ...TextSizes.medium,
+    fontWeight: FontWeights.semibold,
+    color: Colors.textSecondary,
+  },
+});
