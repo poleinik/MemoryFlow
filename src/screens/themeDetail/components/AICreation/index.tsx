@@ -20,7 +20,7 @@ export const AICreateBtn = () => {
             <BrainSparklesIcon width={28} height={28} />
           </TouchableOpacity>
           <Portal>
-            <Modal ref={modalRef}>
+            <Modal ref={modalRef} enableKeyboardAvoiding>
 <CreateAICardModal closeModal={closeModal}/>
             </Modal>
         
