@@ -5,6 +5,7 @@ import {
   Pressable,
   StyleSheet,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Portal } from 'react-native-portalize';
@@ -33,10 +34,33 @@ export default function ExpandableFlipCard({
   flipDuration = 360,
   onOpenChange,
 }: ExpandableFlipCardProps) {
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const isLandscape = screenWidth > screenHeight;
   const [isOpen, setIsOpen] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
   const openProgress = useRef(new Animated.Value(0)).current;
   const flipProgress = useRef(new Animated.Value(0)).current;
+
+  const horizontalPadding = isLandscape ? 12 : 16;
+  const verticalPadding = isLandscape ? 40 : 96;
+
+  const maxWidthByScreen = Math.max(240, screenWidth - horizontalPadding * 2);
+  const maxHeightByScreen = Math.max(220, screenHeight - verticalPadding);
+  const maxWidthByHeight = maxHeightByScreen * aspectRatio;
+
+  const requestedWidth =
+    typeof width === 'number'
+      ? width
+      : (() => {
+          const parsedPercent = parseFloat(width || '90');
+          const adaptivePercent = isLandscape
+            ? Math.min(98, parsedPercent + 6)
+            : parsedPercent;
+          return (screenWidth * adaptivePercent) / 100;
+        })();
+
+  const cardWidth = Math.min(requestedWidth, maxWidthByScreen, maxWidthByHeight);
+  const cardHeight = cardWidth / aspectRatio;
 
   const openCard = () => {
     setIsOpen(true);
@@ -147,13 +171,16 @@ export default function ExpandableFlipCard({
               />
             </Pressable>
 
-            <View style={styles.centered} pointerEvents="box-none">
+            <View
+              style={[styles.centered, { paddingHorizontal: horizontalPadding }]}
+              pointerEvents="box-none"
+            >
               <TouchableOpacity activeOpacity={1} onPress={toggleFlip}>
                 <Animated.View
                   style={[
                     styles.cardContainer,
                     cardAnimatedStyle,
-                    { width, aspectRatio },
+                    { width: cardWidth, height: cardHeight },
                   ]}
                 >
                   <Animated.View style={[styles.face, frontFaceStyle]}>
