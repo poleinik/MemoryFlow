@@ -15,6 +15,7 @@ import PlayIcon from 'assets/PlayIcon';
 import PlusIcon from 'assets/PlusIcon';
 import { CardComponent } from './components/CardComponent';
 import ExpandableFlipCard from 'src/components/ExpandableFlipCard';
+import SwipeNavigationView from 'src/components/SwipeNavigationView';
 export type ThemeStackParamList = {
   ThemeMain: undefined;
   ThemeDetail: { id: string };
@@ -36,137 +37,145 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
     console.log('Текущая тема в ThemeDetailScreen', theme, cards);
   }, [theme, cards]);
 
+  const handleSwipeBack = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    }
+  };
+
 
   return (
-    <View style={layout.container}>
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <TouchableOpacity
-          activeOpacity={0.9}
-          onPress={() => navigation.goBack()}
-        >
-          <ArrowBackIcon color={Colors.textForeground} />
-        </TouchableOpacity>
-        <Text>Назад</Text>
-      </View>
-      <View>
-        <Text style={layout.header1}>{theme?.title}</Text>
-        <Text style={{ ...TextSizes.small, color: Colors.textForeground }}>
-          {theme?.description}
-        </Text>
-      </View>
-      <Progress />
-      <View style={{ flexDirection: 'row', gap: 16 }}>
-        <TouchableScale
-          style={{
-            ...layout.block,
-            flexDirection: 'row',
-            backgroundColor: Colors.primary,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <PlayIcon width={20} height={20} color="white" />
-          <Text
-            style={{
-              marginLeft: 8,
-              color: Colors.textSecondary,
-              fontWeight: FontWeights.semibold,
-              flexShrink: 1,
-              ...TextSizes.medium,
-            }}
-            numberOfLines={1}
-            ellipsizeMode="tail"
+    <SwipeNavigationView onSwipeRight={handleSwipeBack}>
+      <View style={layout.container}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => navigation.goBack()}
           >
-            Повторять
+            <ArrowBackIcon color={Colors.textForeground} />
+          </TouchableOpacity>
+          <Text>Назад</Text>
+        </View>
+        <View>
+          <Text style={layout.header1}>{theme?.title}</Text>
+          <Text style={{ ...TextSizes.small, color: Colors.textForeground }}>
+            {theme?.description}
           </Text>
-        </TouchableScale>
-
-        <TouchableScale
-          style={{
-            ...layout.block,
-            flexDirection: 'row',
-            backgroundColor: Colors.backgroundSecondary,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          onPress={() => openModal()}
-        >
-          <PlusIcon color={Colors.textPrimary} />
-          <Text
+        </View>
+        <Progress />
+        <View style={{ flexDirection: 'row', gap: 16 }}>
+          <TouchableScale
             style={{
-              marginLeft: 8,
-              color: Colors.textPrimary,
-              fontWeight: FontWeights.semibold,
-              flexShrink: 1,
-              ...TextSizes.medium,
+              ...layout.block,
+              flexDirection: 'row',
+              backgroundColor: Colors.primary,
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
-            numberOfLines={1}
-            ellipsizeMode="tail"
           >
-            Добавить карточку
-          </Text>
-        </TouchableScale>
-      </View>
-
-      <View style={{ flex: 1 }}>
-        <Text style={layout.header3}>Карточки</Text>
-        <FlatList
-          data={cards ?? []}
-          style={{ flex: 1 }}
-          contentContainerStyle={{  display: 'flex',
-    flexDirection: 'column',
-    gap: 12,}}
-          showsVerticalScrollIndicator={false}
-          keyExtractor={item => String(item.id)}
-          renderItem={({ item }) => (
-            <ExpandableFlipCard
-              renderPreview={({ onPress }) => (
-                <CardComponent
-                  id={String(item.id)}
-                  question={item.question}
-                  answer={item.answer}
-                  status={item.status}
-                  onPress={onPress}
-                />
-              )}
-              frontContent={
-                <CardComponent
-                  id={String(item.id)}
-                  question={item.question}
-                  answer={item.answer}
-                  status={item.status}
-                  mode="expanded"
-                  showAnswer={false}
-                />
-              }
-              backContent={
-                <CardComponent
-                  id={String(item.id)}
-                  question={item.question}
-                  answer={item.answer}
-                  status={item.status}
-                  mode="expanded"
-                  showAnswer={true}
-                />
-              }
-            />
-          )}
-          ListEmptyComponent={
-            <Text style={{ ...TextSizes.small, color: Colors.textForeground }}>
-              Пока нет карточек
+            <PlayIcon width={20} height={20} color="white" />
+            <Text
+              style={{
+                marginLeft: 8,
+                color: Colors.textSecondary,
+                fontWeight: FontWeights.semibold,
+                flexShrink: 1,
+                ...TextSizes.medium,
+              }}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              Повторять
             </Text>
-          }
-        />
-      </View>
+          </TouchableScale>
 
-      {/* Плавающая кнопка для генерации карточек с ИИ */}
-     <AICreateBtn />
-      <Portal>
-        <Modal ref={modalRef}>
-          <CreateCardModal closeModal={closeModal} />
-        </Modal>
-      
-      </Portal>
-    </View>
+          <TouchableScale
+            style={{
+              ...layout.block,
+              flexDirection: 'row',
+              backgroundColor: Colors.backgroundSecondary,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onPress={() => openModal()}
+          >
+            <PlusIcon color={Colors.textPrimary} />
+            <Text
+              style={{
+                marginLeft: 8,
+                color: Colors.textPrimary,
+                fontWeight: FontWeights.semibold,
+                flexShrink: 1,
+                ...TextSizes.medium,
+              }}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              Добавить карточку
+            </Text>
+          </TouchableScale>
+        </View>
+
+        <View style={{ flex: 1 }}>
+          <Text style={layout.header3}>Карточки</Text>
+          <FlatList
+            data={cards ?? []}
+            style={{ flex: 1 }}
+            contentContainerStyle={{  display: 'flex',
+      flexDirection: 'column',
+      gap: 12,}}
+            showsVerticalScrollIndicator={false}
+            keyExtractor={item => String(item.id)}
+            renderItem={({ item }) => (
+              <ExpandableFlipCard
+                renderPreview={({ onPress }) => (
+                  <CardComponent
+                    id={String(item.id)}
+                    question={item.question}
+                    answer={item.answer}
+                    status={item.status}
+                    onPress={onPress}
+                  />
+                )}
+                frontContent={
+                  <CardComponent
+                    id={String(item.id)}
+                    question={item.question}
+                    answer={item.answer}
+                    status={item.status}
+                    mode="expanded"
+                    showAnswer={false}
+                  />
+                }
+                backContent={
+                  <CardComponent
+                    id={String(item.id)}
+                    question={item.question}
+                    answer={item.answer}
+                    status={item.status}
+                    mode="expanded"
+                    showAnswer={true}
+                  />
+                }
+              />
+            )}
+            ListEmptyComponent={
+              <Text style={{ ...TextSizes.small, color: Colors.textForeground }}>
+                Пока нет карточек
+              </Text>
+            }
+          />
+        </View>
+
+        {/* Плавающая кнопка для генерации карточек с ИИ */}
+       <AICreateBtn />
+        <Portal>
+          <Modal ref={modalRef}>
+            <CreateCardModal closeModal={closeModal} />
+          </Modal>
+        
+        </Portal>
+      </View>
+    </SwipeNavigationView>
   );
 };
