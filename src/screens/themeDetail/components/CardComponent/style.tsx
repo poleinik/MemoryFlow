@@ -36,4 +36,23 @@ export const styles = StyleSheet.create({
           color: Colors.textForeground,
 
         },
+        expandedCard: {
+          ...StyleSheet.absoluteFillObject,
+          backgroundColor: Colors.backgroundLight,
+          borderRadius: 16,
+          padding: 20,
+          justifyContent: 'space-between',
+          borderWidth: 1,
+          borderColor: Colors.borderColor,
+        },
+        expandedLabel: {
+          ...TextSizes.small,
+          fontWeight: FontWeights.semibold,
+          color: Colors.textForeground,
+        },
+        expandedText: {
+          ...TextSizes.xlarge,
+          fontWeight: FontWeights.bold,
+          color: Colors.textPrimary,
+        },
     })

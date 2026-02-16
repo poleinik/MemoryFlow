@@ -1,12 +1,11 @@
 import { useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Colors, FontWeights, layout, TextSizes } from 'src/styles';
 import ArrowBackIcon from 'assets/ArrowBackIcon';
 import { useGetTheme } from '../../hooks/useGetTheme';
 import { useEffect } from 'react';
 import { Progress } from './components/Progress';
-import { styles } from './styles';
 import { AICreateBtn } from './components/AICreation';
 import { Portal } from 'react-native-portalize';
 import { Modal, ModalHandle } from 'src/components/Modal';
@@ -15,6 +14,7 @@ import { CreateCardModal } from './CreateCardModal';
 import PlayIcon from 'assets/PlayIcon';
 import PlusIcon from 'assets/PlusIcon';
 import { CardComponent } from './components/CardComponent';
+import ExpandableFlipCard from 'src/components/ExpandableFlipCard';
 export type ThemeStackParamList = {
   ThemeMain: undefined;
   ThemeDetail: { id: string };
@@ -119,11 +119,36 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
           showsVerticalScrollIndicator={false}
           keyExtractor={item => String(item.id)}
           renderItem={({ item }) => (
-            <CardComponent
-              id={String(item.id)}
-              question={item.question}
-              answer={item.answer}
-              status={item.status}
+            <ExpandableFlipCard
+              renderPreview={({ onPress }) => (
+                <CardComponent
+                  id={String(item.id)}
+                  question={item.question}
+                  answer={item.answer}
+                  status={item.status}
+                  onPress={onPress}
+                />
+              )}
+              frontContent={
+                <CardComponent
+                  id={String(item.id)}
+                  question={item.question}
+                  answer={item.answer}
+                  status={item.status}
+                  mode="expanded"
+                  showAnswer={false}
+                />
+              }
+              backContent={
+                <CardComponent
+                  id={String(item.id)}
+                  question={item.question}
+                  answer={item.answer}
+                  status={item.status}
+                  mode="expanded"
+                  showAnswer={true}
+                />
+              }
             />
           )}
           ListEmptyComponent={
