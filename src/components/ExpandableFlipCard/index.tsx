@@ -1,4 +1,4 @@
-import { ReactNode, useMemo, useRef, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -15,6 +15,7 @@ type ExpandableFlipCardProps = {
   renderPreview: (params: { onPress: () => void }) => ReactNode;
   frontContent: ReactNode;
   backContent: ReactNode;
+  autoOpen?: boolean;
   overlayOpacity?: number;
   width?: number | `${number}%`;
   aspectRatio?: number;
@@ -27,6 +28,7 @@ export default function ExpandableFlipCard({
   renderPreview,
   frontContent,
   backContent,
+  autoOpen = false,
   overlayOpacity = 0.5,
   width = '90%',
   aspectRatio = 1.25,
@@ -157,6 +159,14 @@ export default function ExpandableFlipCard({
     }),
     [flipProgress],
   );
+
+  useEffect(() => {
+    if (!autoOpen || isOpen) {
+      return;
+    }
+
+    openCard();
+  }, [autoOpen, isOpen]);
 
   return (
     <>

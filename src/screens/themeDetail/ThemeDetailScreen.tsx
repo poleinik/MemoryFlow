@@ -43,6 +43,19 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
     }
   };
 
+  const handleStartRepeat = () => {
+    const parentNavigation = navigation.getParent();
+    if (!parentNavigation) {
+      return;
+    }
+
+    (parentNavigation as any).navigate('Repeat', {
+      reviewScope: 'theme',
+      themeId: id,
+      reviewRequestId: Date.now(),
+    });
+  };
+
 
   return (
     <SwipeNavigationView onSwipeRight={handleSwipeBack}>
@@ -72,6 +85,7 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
               alignItems: 'center',
               justifyContent: 'center',
             }}
+            onPress={handleStartRepeat}
           >
             <PlayIcon width={20} height={20} color="white" />
             <Text
