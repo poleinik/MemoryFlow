@@ -15,40 +15,73 @@ type ExpandableFlipCardProps = {
   renderPreview: (params: { onPress: () => void }) => ReactNode;
   frontContent: ReactNode;
   backContent: ReactNode;
+  expandedBottomContent?: ReactNode;
+  expandedContentPlacement?: 'bottom' | 'side';
+  hidePreviewWhenOpen?: boolean;
   autoOpen?: boolean;
+  initialExpanded?: boolean;
+  isExpanded?: boolean;
+  isFlipped?: boolean;
+  showBackdrop?: boolean;
+  expandedTopInset?: number;
+  expandedBottomInset?: number;
   overlayOpacity?: number;
   width?: number | `${number}%`;
   aspectRatio?: number;
   openDuration?: number;
   flipDuration?: number;
   onOpenChange?: (isOpen: boolean) => void;
+  onFlipChange?: (isFlipped: boolean) => void;
 };
 
 export default function ExpandableFlipCard({
   renderPreview,
   frontContent,
   backContent,
+  expandedBottomContent,
+  expandedContentPlacement = 'bottom',
+  hidePreviewWhenOpen = false,
   autoOpen = false,
+  initialExpanded = false,
+  isExpanded,
+  isFlipped,
+  showBackdrop = true,
+  expandedTopInset = 0,
+  expandedBottomInset = 0,
   overlayOpacity = 0.5,
   width = '90%',
   aspectRatio = 1.25,
   openDuration = 220,
   flipDuration = 360,
   onOpenChange,
+  onFlipChange,
 }: ExpandableFlipCardProps) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const isLandscape = screenWidth > screenHeight;
-  const [isOpen, setIsOpen] = useState(false);
-  const [isFlipped, setIsFlipped] = useState(false);
-  const openProgress = useRef(new Animated.Value(0)).current;
-  const flipProgress = useRef(new Animated.Value(0)).current;
+  const startsExpanded = initialExpanded || autoOpen || isExpanded === true;
+  const [isOpen, setIsOpen] = useState(startsExpanded);
+  const [internalIsFlipped, setInternalIsFlipped] = useState(isFlipped ?? false);
+  const openProgress = useRef(new Animated.Value(startsExpanded ? 1 : 0)).current;
+  const flipProgress = useRef(new Animated.Value((isFlipped ?? false) ? 1 : 0)).current;
+  const displayedIsFlipped = isFlipped ?? internalIsFlipped;
 
   const horizontalPadding = isLandscape ? 12 : 16;
   const verticalPadding = isLandscape ? 40 : 96;
 
   const maxWidthByScreen = Math.max(240, screenWidth - horizontalPadding * 2);
-  const maxHeightByScreen = Math.max(220, screenHeight - verticalPadding);
+  const availableHeight = Math.max(
+    220,
+    screenHeight - verticalPadding - expandedTopInset - expandedBottomInset,
+  );
+  const maxHeightByScreen = availableHeight;
   const maxWidthByHeight = maxHeightByScreen * aspectRatio;
+  const shouldPlaceSupplementOnSide =
+    expandedContentPlacement === 'side' && !!expandedBottomContent;
+  const sideContentGap = 12;
+  const sideContentWidth = Math.min(240, Math.max(164, screenWidth * 0.24));
+  const maxCardWidthByLayout = shouldPlaceSupplementOnSide
+    ? Math.max(220, maxWidthByScreen - sideContentWidth - sideContentGap)
+    : maxWidthByScreen;
 
   const requestedWidth =
     typeof width === 'number'
@@ -61,13 +94,20 @@ export default function ExpandableFlipCard({
           return (screenWidth * adaptivePercent) / 100;
         })();
 
-  const cardWidth = Math.min(requestedWidth, maxWidthByScreen, maxWidthByHeight);
+  const cardWidth = Math.min(requestedWidth, maxCardWidthByLayout, maxWidthByHeight);
   const cardHeight = cardWidth / aspectRatio;
 
   const openCard = () => {
+    if (isOpen) {
+      return;
+    }
+
     setIsOpen(true);
-    setIsFlipped(false);
+    if (isFlipped === undefined) {
+      setInternalIsFlipped(false);
+    }
     flipProgress.setValue(0);
+    onFlipChange?.(false);
     openProgress.setValue(0);
     onOpenChange?.(true);
 
@@ -88,15 +128,22 @@ export default function ExpandableFlipCard({
     }).start(({ finished }) => {
       if (!finished) return;
       setIsOpen(false);
-      setIsFlipped(false);
+      if (isFlipped === undefined) {
+        setInternalIsFlipped(false);
+      }
       flipProgress.setValue(0);
+      onFlipChange?.(false);
       onOpenChange?.(false);
     });
   };
 
   const toggleFlip = () => {
-    const nextValue = !isFlipped;
-    setIsFlipped(nextValue);
+    const nextValue = !displayedIsFlipped;
+    if (isFlipped === undefined) {
+      setInternalIsFlipped(nextValue);
+    }
+    onFlipChange?.(nextValue);
+
     Animated.timing(flipProgress, {
       toValue: nextValue ? 1 : 0,
       duration: flipDuration,
@@ -168,40 +215,107 @@ export default function ExpandableFlipCard({
     openCard();
   }, [autoOpen, isOpen]);
 
+  useEffect(() => {
+    if (isExpanded === undefined) {
+      return;
+    }
+
+    if (isExpanded && !isOpen) {
+      openCard();
+      return;
+    }
+
+    if (!isExpanded && isOpen) {
+      closeCard();
+    }
+  }, [isExpanded, isOpen]);
+
+  useEffect(() => {
+    if (isFlipped === undefined) {
+      return;
+    }
+
+    setInternalIsFlipped(isFlipped);
+
+    if (!isOpen) {
+      flipProgress.setValue(isFlipped ? 1 : 0);
+      return;
+    }
+
+    Animated.timing(flipProgress, {
+      toValue: isFlipped ? 1 : 0,
+      duration: flipDuration,
+      easing: Easing.inOut(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [isFlipped, isOpen, flipDuration, flipProgress]);
+
   return (
     <>
-      {renderPreview({ onPress: openCard })}
+    
+      {!isOpen || !hidePreviewWhenOpen ? renderPreview({ onPress: openCard }) : null}
       {isOpen ? (
         <Portal>
           <View style={styles.absoluteFill} pointerEvents="box-none">
-            <Pressable style={styles.absoluteFill} onPress={closeCard}>
-              <Animated.View
-                pointerEvents="none"
-                style={[styles.backdrop, overlayAnimatedStyle]}
-              />
-            </Pressable>
+            {showBackdrop ? (
+              <Pressable style={styles.absoluteFill} onPress={closeCard}>
+                <Animated.View
+                  pointerEvents="none"
+                  style={[styles.backdrop, overlayAnimatedStyle]}
+                />
+              </Pressable>
+            ) : null}
 
             <View
-              style={[styles.centered, { paddingHorizontal: horizontalPadding }]}
+              style={[
+                styles.centered,
+                {
+                  paddingHorizontal: horizontalPadding,
+                  top: expandedTopInset,
+                  bottom: expandedBottomInset,
+                },
+              ]}
               pointerEvents="box-none"
             >
-              <TouchableOpacity activeOpacity={1} onPress={toggleFlip}>
-                <Animated.View
-                  style={[
-                    styles.cardContainer,
-                    cardAnimatedStyle,
-                    { width: cardWidth, height: cardHeight },
-                  ]}
-                >
-                  <Animated.View style={[styles.face, frontFaceStyle]}>
-                    {frontContent}
-                  </Animated.View>
+              <View
+                style={[
+                  styles.expandedContent,
+                  shouldPlaceSupplementOnSide ? styles.expandedContentSide : styles.expandedContentBottom,
+                ]}
+                pointerEvents="box-none"
+              >
+                <TouchableOpacity activeOpacity={1} onPress={toggleFlip}>
+                  <Animated.View
+                    style={[
+                      styles.cardContainer,
+                      cardAnimatedStyle,
+                      { width: cardWidth, height: cardHeight },
+                    ]}
+                  >
+                    <Animated.View style={[styles.face, frontFaceStyle]}>
+                      {frontContent}
+                    </Animated.View>
 
-                  <Animated.View style={[styles.face, styles.backFace, backFaceStyle]}>
-                    {backContent}
+                    <Animated.View style={[styles.face, styles.backFace, backFaceStyle]}>
+                      {backContent}
+                    </Animated.View>
                   </Animated.View>
-                </Animated.View>
-              </TouchableOpacity>
+                </TouchableOpacity>
+
+                {expandedBottomContent ? (
+                  <Animated.View
+                    style={[
+                      styles.bottomContent,
+                      cardAnimatedStyle,
+                      shouldPlaceSupplementOnSide
+                        ? { width: sideContentWidth }
+                        : { width: cardWidth },
+                    ]}
+                  >
+                    {expandedBottomContent}
+                  </Animated.View>
+                ) : null}
+              </View>
             </View>
           </View>
         </Portal>
@@ -224,8 +338,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
   },
+  expandedContent: {
+    gap: 12,
+  },
+  expandedContentBottom: {
+    alignItems: 'center',
+  },
+  expandedContentSide: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   cardContainer: {
     position: 'relative',
+  },
+  bottomContent: {
+    alignSelf: 'center',
   },
   face: {
     ...StyleSheet.absoluteFillObject,

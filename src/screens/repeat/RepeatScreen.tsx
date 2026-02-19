@@ -1,12 +1,15 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  LayoutChangeEvent,
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
-import { useFocusEffect, useRoute } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
+import XIcon from 'assets/XIcon';
 import { Q } from '@nozbe/watermelondb';
 import SwipeNavigationView from 'src/components/SwipeNavigationView';
 import ExpandableFlipCard from 'src/components/ExpandableFlipCard';
@@ -31,6 +34,10 @@ const ratingButtons = [
 
 export function RepeatScreen() {
   const { onSwipeLeft, onSwipeRight } = useTabSwipe('Repeat');
+  const navigation = useNavigation();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const isLandscape = screenWidth > screenHeight;
+
   const route = useRoute();
   const handledRequestIdRef = useRef<number | null>(null);
 
@@ -38,6 +45,9 @@ export function RepeatScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [completedCardIds, setCompletedCardIds] = useState<Set<string>>(new Set());
   const [autoOpenCard, setAutoOpenCard] = useState(false);
+  const [isCardExpanded, setIsCardExpanded] = useState(true);
+  const [isCardFlipped, setIsCardFlipped] = useState(false);
+  const [reviewHeaderHeight, setReviewHeaderHeight] = useState(0);
 
   const fetchCardsForRepeat = useCallback(async () => {
     setIsLoading(true);
@@ -75,6 +85,7 @@ export function RepeatScreen() {
       return leftTime - rightTime;
     });
 
+    
     setCards(sortedCards);
     setAutoOpenCard(Boolean(themeId));
     setCompletedCardIds(new Set());
@@ -83,7 +94,13 @@ export function RepeatScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      setIsCardExpanded(true);
       fetchCardsForRepeat();
+
+      return () => {
+        setIsCardExpanded(false);
+        setIsCardFlipped(false);
+      };
     }, [fetchCardsForRepeat]),
   );
 
@@ -93,8 +110,17 @@ export function RepeatScreen() {
   );
 
   const currentCard = pendingCards[0];
+  const totalCardsCount = cards.length;
+  const completedCount = completedCardIds.size;
+  const currentCardNumber = Math.min(completedCount + 1, totalCardsCount);
+  const progress = totalCardsCount > 0 ? completedCount / totalCardsCount : 0;
+
+  useEffect(() => {
+    setIsCardFlipped(false);
+  }, [currentCard?.id]);
 
   const markCardReviewed = (cardId: string) => {
+    setIsCardFlipped(false);
     setCompletedCardIds(previous => {
       const next = new Set(previous);
       next.add(cardId);
@@ -102,10 +128,20 @@ export function RepeatScreen() {
     });
   };
 
+  const handleClosePress = () => {
+    setIsCardExpanded(false);
+    setIsCardFlipped(false);
+    navigation.goBack();
+  };
+
+  const handleHeaderLayout = (event: LayoutChangeEvent) => {
+    const { height } = event.nativeEvent.layout;
+    setReviewHeaderHeight(height);
+  };
+
   return (
     <SwipeNavigationView onSwipeLeft={onSwipeLeft} onSwipeRight={onSwipeRight}>
       <View style={layout.container}>
-        <Text style={layout.header2}>Повтор</Text>
 
         {isLoading ? (
           <View style={styles.centeredBlock}>
@@ -121,18 +157,49 @@ export function RepeatScreen() {
 
         {!isLoading && currentCard ? (
           <View style={styles.contentWrapper}>
-            <Text style={styles.counterText}>{pendingCards.length} карточек к повторению</Text>
+            <View style={styles.reviewHeader} onLayout={handleHeaderLayout}>
+              <View style={styles.reviewHeaderTopRow}>
+                <TouchableOpacity
+                  onPress={handleClosePress}
+                  style={styles.closeButton}
+                  activeOpacity={0.8}
+                >
+                  <XIcon color={Colors.textForeground} width={20} height={20} />
+                </TouchableOpacity>
+
+                <View style={styles.reviewHeaderCenter}>
+                  <Text style={styles.reviewHeaderTitle}>{currentCardNumber} / {totalCardsCount}</Text>
+                  <Text style={styles.reviewHeaderSubtitle}>{pendingCards.length} карточек к повторению</Text>
+                </View>
+
+                <View style={styles.closeButtonSpacer} />
+              </View>
+
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+              </View>
+            </View>
 
             <ExpandableFlipCard
               key={currentCard.id}
               autoOpen={autoOpenCard}
+              isExpanded={isCardExpanded}
+              isFlipped={isCardFlipped}
+              hidePreviewWhenOpen
+              showBackdrop={false}
+              expandedTopInset={reviewHeaderHeight + 8}
               overlayOpacity={0.45}
-              aspectRatio={0.72}
+              width={isLandscape ? '98%' : '90%'}
+              aspectRatio={isLandscape ? 1.08 : 0.72}
+              expandedContentPlacement={isLandscape ? 'side' : 'bottom'}
               onOpenChange={isOpen => {
+                setIsCardExpanded(isOpen);
                 if (isOpen) {
                   setAutoOpenCard(false);
                 }
               }}
+              
+              onFlipChange={setIsCardFlipped}
               renderPreview={({ onPress }) => (
                 <TouchableOpacity
                   activeOpacity={0.9}
@@ -153,23 +220,33 @@ export function RepeatScreen() {
               }
               backContent={
                 <View style={styles.expandedCardBack}>
-                  <Text style={styles.expandedLabel}>Ответ</Text>
+                  <View style={styles.expandedLabelContainer}>
+                  <Text style={styles.expandedLabel}>Ответ</Text></View>
                   <Text style={styles.expandedAnswer}>{currentCard.answer}</Text>
-                  <Text style={styles.rateHint}>Как хорошо вы знали ответ?</Text>
-
-                  <View style={styles.ratingGrid}>
-                    {ratingButtons.map(button => (
-                      <TouchableOpacity
-                        key={button.key}
-                        activeOpacity={0.9}
-                        onPress={() => markCardReviewed(currentCard.id)}
-                        style={[styles.ratingButton, { backgroundColor: button.color }]}
-                      >
-                        <Text style={styles.ratingButtonText}>{button.label}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
                 </View>
+              }
+              expandedBottomContent={
+                isCardFlipped ? (
+                  <View style={styles.ratingContent}>
+                    <Text style={styles.rateHint}>Как хорошо вы знали ответ?</Text>
+                    <View style={[styles.ratingGrid, isLandscape && styles.ratingGridLandscape]}>
+                      {ratingButtons.map(button => (
+                        <TouchableOpacity
+                          key={button.key}
+                          activeOpacity={0.9}
+                          onPress={() => markCardReviewed(currentCard.id)}
+                          style={[
+                            styles.ratingButton,
+                            isLandscape && styles.ratingButtonLandscape,
+                            { backgroundColor: button.color },
+                          ]}
+                        >
+                          <Text style={styles.ratingButtonText}>{button.label}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                ) : null
               }
             />
           </View>
@@ -191,6 +268,8 @@ const styles = StyleSheet.create({
     fontWeight: FontWeights.semibold,
   },
   contentWrapper: {
+    display: 'flex',
+    justifyContent: 'flex-start',
     flex: 1,
     gap: 12,
   },
@@ -198,6 +277,50 @@ const styles = StyleSheet.create({
     ...TextSizes.small,
     color: Colors.textForeground,
     fontWeight: FontWeights.semibold,
+  },
+  reviewHeader: {
+    gap: 8,
+  },
+  reviewHeaderTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeButtonSpacer: {
+    width: 32,
+    height: 32,
+  },
+  reviewHeaderCenter: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  reviewHeaderTitle: {
+    ...TextSizes.large,
+    color: Colors.textPrimary,
+    fontWeight: FontWeights.bold,
+  },
+  reviewHeaderSubtitle: {
+    ...TextSizes.small,
+    color: Colors.textForeground,
+  },
+  progressTrack: {
+    height: 4,
+    width: '100%',
+    backgroundColor: Colors.borderColor,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: Colors.primary,
+    borderRadius: 999,
   },
   previewCard: {
     ...layout.block,
@@ -228,34 +351,45 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.backgroundLight,
     borderRadius: 16,
     padding: 20,
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: Colors.borderColor,
-  },
-  expandedCardBack: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: Colors.backgroundSecondary,
-    borderRadius: 16,
-    padding: 20,
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.borderColor,
     gap: 12,
   },
+  expandedCardBack: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: Colors.backgroundLight7,
+    borderRadius: 16,
+    padding: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.borderColor,
+    gap: 12,
+  },
+  expandedLabelContainer: {
+    backgroundColor: Colors.backgroundAccent,
+    paddingHorizontal: 12,  
+    paddingVertical: 4,
+    borderRadius: 50,
+  },
   expandedLabel: {
-    ...TextSizes.small,
-    color: Colors.textForeground,
+    ...TextSizes.xsmall,
+    color: Colors.textSecondary,
     fontWeight: FontWeights.semibold,
   },
   expandedQuestion: {
     ...TextSizes.xxlarge,
     color: Colors.textPrimary,
     fontWeight: FontWeights.bold,
+    textAlign: 'center',
   },
   expandedAnswer: {
     ...TextSizes.large,
     color: Colors.textPrimary,
     fontWeight: FontWeights.medium,
+    textAlign: 'center',
   },
   flipHint: {
     ...TextSizes.small,
@@ -266,10 +400,18 @@ const styles = StyleSheet.create({
     color: Colors.textForeground,
     fontWeight: FontWeights.semibold,
   },
+  ratingContent: {
+    gap: 8,
+  },
   ratingGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+  },
+  ratingGridLandscape: {
+    flexDirection: 'column',
+    flexWrap: 'nowrap',
+    width: '100%',
   },
   ratingButton: {
     flexGrow: 1,
@@ -279,6 +421,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  ratingButtonLandscape: {
+    flexGrow: 0,
+    flexBasis: 'auto',
+    width: '100%',
+  },
+
   ratingButtonText: {
     ...TextSizes.small,
     color: Colors.textSecondary,

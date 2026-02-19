@@ -13,6 +13,7 @@ export const Colors = {
   backgroundLight4: '#faf5ff',
   backgroundLight5: '#fff1f2',
   backgroundLight6: '#defaff',
+  backgroundLight7:'#E7F8F2',
   backgroundSecondary: '#f3f4f6',
   buttonColor: '#3B82F6',
   buttonColor2: '#2563eb',
