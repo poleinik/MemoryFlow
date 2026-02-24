@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { View, Text, TouchableOpacity, FlatList } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Colors, FontWeights, layout, TextSizes } from 'src/styles';
@@ -14,8 +14,10 @@ import { CreateCardModal } from './CreateCardModal';
 import PlayIcon from 'assets/PlayIcon';
 import PlusIcon from 'assets/PlusIcon';
 import { CardComponent } from './components/CardComponent';
-import ExpandableFlipCard from 'src/components/ExpandableFlipCard';
+import ExpandableCard from 'src/components/ExpandableCard';
+import FlipCard from 'src/components/FlipCard';
 import SwipeNavigationView from 'src/components/SwipeNavigationView';
+import { StatusCard } from 'src/model/consts';
 export type ThemeStackParamList = {
   ThemeMain: undefined;
   ThemeDetail: { id: string };
@@ -33,9 +35,18 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
   useEffect(() => {
     fetch(id);
   }, [id]);
-  useEffect(() => {
-    console.log('Текущая тема в ThemeDetailScreen', theme, cards);
-  }, [theme, cards]);
+
+
+  const totalCards = cards?.length ?? 0;
+  const completedCards = useMemo(
+    () =>
+      (cards ?? []).filter(
+        card =>
+          (card.status as (typeof StatusCard)[keyof typeof StatusCard]) ===
+          StatusCard.MASTERED,
+      ).length,
+    [cards],
+  );
 
   const handleSwipeBack = () => {
     if (navigation.canGoBack()) {
@@ -75,7 +86,7 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
             {theme?.description}
           </Text>
         </View>
-        <Progress />
+        <Progress total={totalCards} completed={completedCards} />
         <View style={{ flexDirection: 'row', gap: 16 }}>
           <TouchableScale
             style={{
@@ -140,39 +151,52 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
       gap: 12,}}
             showsVerticalScrollIndicator={false}
             keyExtractor={item => String(item.id)}
-            renderItem={({ item }) => (
-              <ExpandableFlipCard
-                renderPreview={({ onPress }) => (
-                  <CardComponent
-                    id={String(item.id)}
-                    question={item.question}
-                    answer={item.answer}
-                    status={item.status}
-                    onPress={onPress}
-                  />
-                )}
-                frontContent={
-                  <CardComponent
-                    id={String(item.id)}
-                    question={item.question}
-                    answer={item.answer}
-                    status={item.status}
-                    mode="expanded"
-                    showAnswer={false}
-                  />
-                }
-                backContent={
-                  <CardComponent
-                    id={String(item.id)}
-                    question={item.question}
-                    answer={item.answer}
-                    status={item.status}
-                    mode="expanded"
-                    showAnswer={true}
-                  />
-                }
-              />
-            )}
+            renderItem={({ item }) => {
+              const cardStatus =
+                item.status as (typeof StatusCard)[keyof typeof StatusCard];
+
+              return (
+                <ExpandableCard
+                  renderPreview={({ onPress }) => (
+                    <CardComponent
+                      id={String(item.id)}
+                      question={item.question}
+                      answer={item.answer}
+                      status={cardStatus}
+                      nextReviewAt={item.nextReviewAt}
+                      onPress={onPress}
+                    />
+                  )}
+                  renderExpandedContent={({ cardWidth, cardHeight }) => (
+                    <FlipCard
+                      style={{ width: cardWidth, height: cardHeight }}
+                      frontContent={
+                        <CardComponent
+                          id={String(item.id)}
+                          question={item.question}
+                          answer={item.answer}
+                          status={cardStatus}
+                          nextReviewAt={item.nextReviewAt}
+                          mode="expanded"
+                          showAnswer={false}
+                        />
+                      }
+                      backContent={
+                        <CardComponent
+                          id={String(item.id)}
+                          question={item.question}
+                          answer={item.answer}
+                          status={cardStatus}
+                          nextReviewAt={item.nextReviewAt}
+                          mode="expanded"
+                          showAnswer={true}
+                        />
+                      }
+                    />
+                  )}
+                />
+              );
+            }}
             ListEmptyComponent={
               <Text style={{ ...TextSizes.small, color: Colors.textForeground }}>
                 Пока нет карточек

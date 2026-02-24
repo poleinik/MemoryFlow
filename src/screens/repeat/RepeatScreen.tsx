@@ -12,12 +12,14 @@ import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/nativ
 import XIcon from 'assets/XIcon';
 import { Q } from '@nozbe/watermelondb';
 import SwipeNavigationView from 'src/components/SwipeNavigationView';
-import ExpandableFlipCard from 'src/components/ExpandableFlipCard';
+import FlipCard from 'src/components/FlipCard';
+import { useUpdateCard } from 'src/api/useUpdateCard';
 import { useTabSwipe } from 'src/hooks/useTabSwipe';
 import Card from 'src/model/Cards';
 import { StatusCard } from 'src/model/consts';
 import { database } from 'src/model';
 import { Colors, FontWeights, TextSizes, layout } from 'src/styles';
+import { calculateNextReviewState, ReviewRatingKey } from 'src/utils/supermemo';
 
 type RepeatRouteParams = {
   reviewScope?: 'theme';
@@ -34,6 +36,7 @@ const ratingButtons = [
 
 export function RepeatScreen() {
   const { onSwipeLeft, onSwipeRight } = useTabSwipe('Repeat');
+  const { updateCard } = useUpdateCard();
   const navigation = useNavigation();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const isLandscape = screenWidth > screenHeight;
@@ -44,8 +47,6 @@ export function RepeatScreen() {
   const [cards, setCards] = useState<Card[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [completedCardIds, setCompletedCardIds] = useState<Set<string>>(new Set());
-  const [autoOpenCard, setAutoOpenCard] = useState(false);
-  const [isCardExpanded, setIsCardExpanded] = useState(true);
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [reviewHeaderHeight, setReviewHeaderHeight] = useState(0);
 
@@ -87,18 +88,15 @@ export function RepeatScreen() {
 
     
     setCards(sortedCards);
-    setAutoOpenCard(Boolean(themeId));
     setCompletedCardIds(new Set());
     setIsLoading(false);
   }, [route.params]);
 
   useFocusEffect(
     useCallback(() => {
-      setIsCardExpanded(true);
       fetchCardsForRepeat();
 
       return () => {
-        setIsCardExpanded(false);
         setIsCardFlipped(false);
       };
     }, [fetchCardsForRepeat]),
@@ -114,22 +112,58 @@ export function RepeatScreen() {
   const completedCount = completedCardIds.size;
   const currentCardNumber = Math.min(completedCount + 1, totalCardsCount);
   const progress = totalCardsCount > 0 ? completedCount / totalCardsCount : 0;
+  const horizontalPadding = isLandscape ? 12 : 16;
+  const cardAspectRatio = isLandscape ? 1.08 : 0.72;
+  const shouldPlaceSupplementOnSide = isLandscape;
+  const sideContentGap = 12;
+  const sideContentWidth = Math.min(240, Math.max(164, screenWidth * 0.24));
+  const availableHeight = Math.max(220, screenHeight - reviewHeaderHeight - (isLandscape ? 64 : 120));
+  const maxWidthByScreen = Math.max(240, screenWidth - horizontalPadding * 2);
+  const maxWidthByHeight = availableHeight * cardAspectRatio;
+  const maxCardWidthByLayout = shouldPlaceSupplementOnSide
+    ? Math.max(220, maxWidthByScreen - sideContentWidth - sideContentGap)
+    : maxWidthByScreen;
+  const requestedWidth = (screenWidth * (isLandscape ? 98 : 90)) / 100;
+  const cardWidth = Math.min(requestedWidth, maxCardWidthByLayout, maxWidthByHeight);
+  const cardHeight = cardWidth / cardAspectRatio;
 
   useEffect(() => {
     setIsCardFlipped(false);
   }, [currentCard?.id]);
 
-  const markCardReviewed = (cardId: string) => {
+  const markCardReviewed = async (
+    card: Card,
+    rating: ReviewRatingKey,
+  ) => {
+    console.log('markCardReviewed', { cardId: card.id, rating });
+    const nextState = calculateNextReviewState(
+      {
+        interval: card.interval ?? 0,
+        repetitions: card.repetitions ?? 0,
+        easeFactor: card.easeFactor ?? 2.5,
+      },
+      rating,
+    );
+
+    await updateCard({
+      id: card.id,
+      interval: nextState.interval,
+      repetitions: nextState.repetitions,
+      easeFactor: nextState.easeFactor,
+      nextReviewAt: nextState.nextReviewAt,
+      status: nextState.status,
+      isNotificationSended: false,
+    });
+
     setIsCardFlipped(false);
     setCompletedCardIds(previous => {
       const next = new Set(previous);
-      next.add(cardId);
+      next.add(card.id);
       return next;
     });
   };
 
   const handleClosePress = () => {
-    setIsCardExpanded(false);
     setIsCardFlipped(false);
     navigation.goBack();
   };
@@ -180,61 +214,53 @@ export function RepeatScreen() {
               </View>
             </View>
 
-            <ExpandableFlipCard
-              key={currentCard.id}
-              autoOpen={autoOpenCard}
-              isExpanded={isCardExpanded}
-              isFlipped={isCardFlipped}
-              hidePreviewWhenOpen
-              showBackdrop={false}
-              expandedTopInset={reviewHeaderHeight + 8}
-              overlayOpacity={0.45}
-              width={isLandscape ? '98%' : '90%'}
-              aspectRatio={isLandscape ? 1.08 : 0.72}
-              expandedContentPlacement={isLandscape ? 'side' : 'bottom'}
-              onOpenChange={isOpen => {
-                setIsCardExpanded(isOpen);
-                if (isOpen) {
-                  setAutoOpenCard(false);
-                }
-              }}
-              
-              onFlipChange={setIsCardFlipped}
-              renderPreview={({ onPress }) => (
-                <TouchableOpacity
-                  activeOpacity={0.9}
-                  style={styles.previewCard}
-                  onPress={onPress}
-                >
-                  <Text style={styles.previewLabel}>Вопрос</Text>
-                  <Text style={styles.previewQuestion}>{currentCard.question}</Text>
-                  <Text style={styles.previewHint}>Нажмите, чтобы открыть</Text>
-                </TouchableOpacity>
-              )}
-              frontContent={
-                <View style={styles.expandedCardFront}>
-                  <Text style={styles.expandedLabel}>Вопрос</Text>
-                  <Text style={styles.expandedQuestion}>{currentCard.question}</Text>
-                  <Text style={styles.flipHint}>Нажмите, чтобы перевернуть</Text>
-                </View>
-              }
-              backContent={
-                <View style={styles.expandedCardBack}>
-                  <View style={styles.expandedLabelContainer}>
-                  <Text style={styles.expandedLabel}>Ответ</Text></View>
-                  <Text style={styles.expandedAnswer}>{currentCard.answer}</Text>
-                </View>
-              }
-              expandedBottomContent={
-                isCardFlipped ? (
-                  <View style={styles.ratingContent}>
+            <View style={[styles.reviewBody, { paddingHorizontal: horizontalPadding }]}> 
+              <View
+                style={[
+                  styles.cardAndRatingContainer,
+                  shouldPlaceSupplementOnSide
+                    ? styles.cardAndRatingSide
+                    : styles.cardAndRatingBottom,
+                ]}
+              >
+                <FlipCard
+                  key={currentCard.id}
+                  isFlipped={isCardFlipped}
+                  onFlipChange={setIsCardFlipped}
+                  style={{ width: cardWidth, height: cardHeight }}
+                  frontContent={
+                    <View style={styles.expandedCardFront}>
+                      <Text style={styles.expandedLabel}>Вопрос</Text>
+                      <Text style={styles.expandedQuestion}>{currentCard.question}</Text>
+                      <Text style={styles.flipHint}>Нажмите, чтобы перевернуть</Text>
+                    </View>
+                  }
+                  backContent={
+                    <View style={styles.expandedCardBack}>
+                      <View style={styles.expandedLabelContainer}>
+                        <Text style={styles.expandedLabel}>Ответ</Text>
+                      </View>
+                      <Text style={styles.expandedAnswer}>{currentCard.answer}</Text>
+                    </View>
+                  }
+                />
+
+                {isCardFlipped ? (
+                  <View
+                    style={[
+                      styles.ratingContent,
+                      shouldPlaceSupplementOnSide
+                        ? { width: sideContentWidth }
+                        : { width: cardWidth },
+                    ]}
+                  >
                     <Text style={styles.rateHint}>Как хорошо вы знали ответ?</Text>
                     <View style={[styles.ratingGrid, isLandscape && styles.ratingGridLandscape]}>
                       {ratingButtons.map(button => (
                         <TouchableOpacity
                           key={button.key}
                           activeOpacity={0.9}
-                          onPress={() => markCardReviewed(currentCard.id)}
+                          onPress={() => markCardReviewed(currentCard, button.key)}
                           style={[
                             styles.ratingButton,
                             isLandscape && styles.ratingButtonLandscape,
@@ -245,10 +271,10 @@ export function RepeatScreen() {
                         </TouchableOpacity>
                       ))}
                     </View>
-                  </View>
-                ) : null
-              }
-            />
+                </View>
+                ) : null}
+              </View>
+            </View>
           </View>
         ) : null}
       </View>
@@ -322,29 +348,20 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     borderRadius: 999,
   },
-  previewCard: {
-    ...layout.block,
-    backgroundColor: Colors.backgroundLight,
-    borderWidth: 1,
-    borderColor: Colors.borderColor,
-    borderRadius: 16,
-    minHeight: 160,
-    justifyContent: 'space-between',
+  reviewBody: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardAndRatingContainer: {
     gap: 12,
   },
-  previewLabel: {
-    ...TextSizes.small,
-    color: Colors.textForeground,
-    fontWeight: FontWeights.semibold,
+  cardAndRatingBottom: {
+    alignItems: 'center',
   },
-  previewQuestion: {
-    ...TextSizes.large,
-    color: Colors.textPrimary,
-    fontWeight: FontWeights.bold,
-  },
-  previewHint: {
-    ...TextSizes.small,
-    color: Colors.textForeground,
+  cardAndRatingSide: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   expandedCardFront: {
     ...StyleSheet.absoluteFillObject,

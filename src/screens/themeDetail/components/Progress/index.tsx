@@ -4,10 +4,16 @@ import { PaletteColors } from 'src/constants/PaletteColors';
 import { useThemeStore } from 'src/store/useThemeStore';
 import { FontWeights, layout, TextSizes } from 'src/styles';
 import { styles } from './style';
-export const Progress = () => {
+
+type ProgressProps = {
+  total: number;
+  completed: number;
+};
+
+export const Progress = ({ total, completed }: ProgressProps) => {
   const { theme } = useThemeStore();
-  const total = 10;
-  const completed = 5;
+  const progress = total > 0 ? completed / total : 0;
+
   return (
     <View
       style={{
@@ -31,7 +37,7 @@ export const Progress = () => {
           {completed} / {total}
         </Text>
       </View>
-      <Bar progress={0.5} width={null} color={theme?.color || 'blue'} />
+      <Bar progress={progress} width={null} color={theme?.color || 'blue'} />
     </View>
   );
 };
