@@ -12,6 +12,7 @@ import {
   View,
   Text,
 } from 'react-native';
+import { useEffect } from 'react';
 import {
   SafeAreaProvider,
   useSafeAreaInsets,
@@ -33,9 +34,19 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Host } from 'react-native-portalize';
 import { DatabaseProvider } from '@nozbe/watermelondb/DatabaseProvider';
 import { database } from './src/model';
-import { ThemeDetailScreen } from 'src/screens/themeDetail/ThemeDetailScreen';
+import {
+  ThemeDetailScreen,
+  ThemeStackParamList,
+} from 'src/screens/themeDetail/ThemeDetailScreen';
+import { initializeReviewNotifications } from 'src/services/notifications/reviewNotifications';
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
+
+  useEffect(() => {
+    initializeReviewNotifications().catch(error => {
+      console.warn('Failed to initialize review notifications', error);
+    });
+  }, []);
 
   console.log('Database initialized:', database);
   return (
@@ -47,7 +58,7 @@ function App() {
     </DatabaseProvider>
   );
 }
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<ThemeStackParamList>();
 const Tabs = createBottomTabNavigator();
 
 function ThemeStack() {

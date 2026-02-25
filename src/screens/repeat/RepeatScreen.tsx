@@ -20,6 +20,7 @@ import { StatusCard } from 'src/model/consts';
 import { database } from 'src/model';
 import { Colors, FontWeights, TextSizes, layout } from 'src/styles';
 import { calculateNextReviewState, ReviewRatingKey } from 'src/utils/supermemo';
+import { rescheduleReviewReminder } from 'src/services/notifications/reviewNotifications';
 
 type RepeatRouteParams = {
   reviewScope?: 'theme';
@@ -154,6 +155,8 @@ export function RepeatScreen() {
       status: nextState.status,
       isNotificationSended: false,
     });
+
+    await rescheduleReviewReminder();
 
     setIsCardFlipped(false);
     setCompletedCardIds(previous => {

@@ -63,8 +63,24 @@ const getCompactDescription = ({
         return 'Повтор сегодня';
     }
 
-    const diffMs = nextReviewAt.getTime() - Date.now();
-    const diffDays = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+    const now = new Date();
+    const isSameDay =
+        nextReviewAt.getFullYear() === now.getFullYear() &&
+        nextReviewAt.getMonth() === now.getMonth() &&
+        nextReviewAt.getDate() === now.getDate();
+
+    if (isSameDay) {
+        return 'Повтор сегодня';
+    }
+
+    const dayMs = 24 * 60 * 60 * 1000;
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const startOfNextReviewDay = new Date(
+        nextReviewAt.getFullYear(),
+        nextReviewAt.getMonth(),
+        nextReviewAt.getDate(),
+    ).getTime();
+    const diffDays = Math.round((startOfNextReviewDay - startOfToday) / dayMs);
 
     if (diffDays <= 0) {
         return 'Повтор сегодня';

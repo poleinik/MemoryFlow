@@ -82,6 +82,7 @@ export const layout = StyleSheet.create({
   header3: {
     ...TextSizes.xlarge,
     fontWeight: FontWeights.bold,
+    marginBottom: 8,
   },
   flatList: {
      display: 'flex',

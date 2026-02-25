@@ -1,10 +1,10 @@
-import { useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { View, Text, TouchableOpacity, FlatList } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 import { Colors, FontWeights, layout, TextSizes } from 'src/styles';
 import ArrowBackIcon from 'assets/ArrowBackIcon';
 import { useGetTheme } from '../../hooks/useGetTheme';
-import { useEffect } from 'react';
 import { Progress } from './components/Progress';
 import { AICreateBtn } from './components/AICreation';
 import { Portal } from 'react-native-portalize';
@@ -32,9 +32,11 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
   const openModal = () => modalRef?.current?.openModal();
   const closeModal = () => modalRef?.current?.closeModal();
 
-  useEffect(() => {
-    fetch(id);
-  }, [id]);
+  useFocusEffect(
+    useCallback(() => {
+      fetch(id);
+    }, [fetch, id]),
+  );
 
 
   const totalCards = cards?.length ?? 0;
