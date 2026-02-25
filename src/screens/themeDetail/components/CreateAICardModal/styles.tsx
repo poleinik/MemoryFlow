@@ -2,6 +2,70 @@ import { StyleSheet } from 'react-native';
 import { Colors, FontWeights, TextSizes } from 'src/styles';
 
 export const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+    gap: 12,
+    paddingTop: 40,
+    paddingBottom: 24,
+  },
+  loadingIconWrap: {
+    width: 112,
+    height: 112,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  loadingPulse: {
+    position: 'absolute',
+    width: 112,
+    height: 112,
+   
+    borderRadius: 999,
+    backgroundColor: Colors.backgroundAccent3,
+  },
+  loadingIconCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 999,
+    backgroundColor: Colors.backgroundAccent3,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingTitle: {
+    ...TextSizes.xxlarge,
+    fontWeight: FontWeights.bold,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+  },
+  loadingSubtitle: {
+    ...TextSizes.medium,
+    fontWeight: FontWeights.regular,
+    color: Colors.textForeground,
+    textAlign: 'center',
+  },
+  loadingProgressTrack: {
+    width: '100%',
+    height: 8,
+    borderRadius: 999,
+    overflow: 'hidden',
+    backgroundColor: Colors.backgroundSecondary,
+    marginTop: 8,
+  },
+  loadingProgressFill: {
+    width: '22%',
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: Colors.backgroundAccent3,
+  },
+  loadingStepText: {
+    ...TextSizes.large,
+    fontWeight: FontWeights.regular,
+    color: Colors.textForeground,
+    textAlign: 'center',
+  },
   container: {
     display: 'flex',
     flexDirection: 'column',

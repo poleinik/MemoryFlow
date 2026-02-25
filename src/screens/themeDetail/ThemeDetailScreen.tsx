@@ -23,6 +23,7 @@ export type ThemeStackParamList = {
   ThemeDetail: { id: string };
 };
 
+
 type Props = NativeStackScreenProps<ThemeStackParamList, 'ThemeDetail'>;
 
 export const ThemeDetailScreen = ({ route, navigation }: Props) => {
