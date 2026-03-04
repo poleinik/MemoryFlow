@@ -38,14 +38,24 @@ import {
   ThemeDetailScreen,
   ThemeStackParamList,
 } from 'src/screens/themeDetail/ThemeDetailScreen';
-import { initializeReviewNotifications } from 'src/services/notifications/reviewNotifications';
+
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
 
   useEffect(() => {
-    initializeReviewNotifications().catch(error => {
-      console.warn('Failed to initialize review notifications', error);
-    });
+    const initNotifications = async () => {
+      try {
+        const notificationsModule = await import(
+          './src/services/notifications/reviewNotifications'
+        );
+
+        await notificationsModule?.initializeReviewNotifications?.();
+      } catch (error) {
+        console.warn('Failed to initialize review notifications', error);
+      }
+    };
+
+    initNotifications();
   }, []);
 
   console.log('Database initialized:', database);

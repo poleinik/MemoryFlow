@@ -2,8 +2,117 @@ import { StyleSheet } from 'react-native';
 import { Colors, FontWeights, TextSizes } from 'src/styles';
 
 export const styles = StyleSheet.create({
-  loadingContainer: {
+  modalContentWrap: {
+    maxHeight: '80%',
+  },
+  generatedContainer: {
+    maxHeight: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+  },
+  generatedHeaderRow: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  generatedReadyText: {
+    ...TextSizes.medium,
+    fontWeight: FontWeights.semibold,
+    color: Colors.backgroundAccent,
+  },
+  retryText: {
+    ...TextSizes.medium,
+    fontWeight: FontWeights.medium,
+    color: Colors.backgroundAccent3,
+  },
+  generatedListWrap: {
+    flexGrow: 1,
+  },
+  generatedListContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
+    paddingBottom: 4,
+  },
+  generatedCard: {
+    backgroundColor: Colors.backgroundLight4,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  generatedBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    backgroundColor: Colors.backgroundAccent3,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  generatedBadgeText: {
+    ...TextSizes.small,
+    fontWeight: FontWeights.bold,
+    color: Colors.textSecondary,
+  },
+  generatedTextWrap: {
     flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+  },
+  generatedQuestion: {
+    ...TextSizes.medium,
+    fontWeight: FontWeights.bold,
+    color: Colors.textPrimary,
+  },
+  generatedAnswer: {
+    ...TextSizes.small,
+    fontWeight: FontWeights.regular,
+    color: Colors.textForeground,
+  },
+  generatedButtonsRow: {
+    display: 'flex',
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 4,
+  },
+  backButton: {
+    flex: 1,
+    minHeight: 52,
+    borderRadius: 12,
+    backgroundColor: Colors.backgroundSecondary,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backButtonText: {
+    ...TextSizes.medium,
+    fontWeight: FontWeights.semibold,
+    color: Colors.textPrimary,
+  },
+  addAllButton: {
+    flex: 1,
+    minHeight: 52,
+    borderRadius: 12,
+    backgroundColor: Colors.backgroundAccent,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addAllButtonText: {
+    ...TextSizes.medium,
+    fontWeight: FontWeights.semibold,
+    color: Colors.textSecondary,
+  },
+  loadingContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 8,
