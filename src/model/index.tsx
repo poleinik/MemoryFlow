@@ -7,6 +7,7 @@ import migrations from './migrations';
 import User from './User';
 import Theme from './Themes';
 import Card from './Cards';
+import ReviewLog from './ReviewLog';
 // import Post from './model/Post' // ⬅️ You'll import your Models here
 
 // First, create the adapter to the underlying database:
@@ -30,5 +31,5 @@ const adapter = new SQLiteAdapter({
 // Then, make a Watermelon database from it!
 export const database = new Database({
   adapter,
-  modelClasses: [User, Theme, Card],
+  modelClasses: [User, Theme, Card, ReviewLog],
 });

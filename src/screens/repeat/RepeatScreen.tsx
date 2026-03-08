@@ -16,6 +16,7 @@ import FlipCard from 'src/components/FlipCard';
 import { useUpdateCard } from 'src/api/useUpdateCard';
 import { useTabSwipe } from 'src/hooks/useTabSwipe';
 import Card from 'src/model/Cards';
+import ReviewLog from 'src/model/ReviewLog';
 import { StatusCard } from 'src/model/consts';
 import { database } from 'src/model';
 import { Colors, FontWeights, TextSizes, layout } from 'src/styles';
@@ -50,6 +51,7 @@ export function RepeatScreen() {
   const [completedCardIds, setCompletedCardIds] = useState<Set<string>>(new Set());
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [reviewHeaderHeight, setReviewHeaderHeight] = useState(0);
+  const cardShownAtRef = useRef<number>(Date.now());
 
   const fetchCardsForRepeat = useCallback(async () => {
     setIsLoading(true);
@@ -130,6 +132,7 @@ export function RepeatScreen() {
 
   useEffect(() => {
     setIsCardFlipped(false);
+    cardShownAtRef.current = Date.now();
   }, [currentCard?.id]);
 
   const markCardReviewed = async (
@@ -137,6 +140,9 @@ export function RepeatScreen() {
     rating: ReviewRatingKey,
   ) => {
     console.log('markCardReviewed', { cardId: card.id, rating });
+    const durationMs = Date.now() - cardShownAtRef.current;
+    const isCorrect = rating !== 'again';
+
     const nextState = calculateNextReviewState(
       {
         interval: card.interval ?? 0,
@@ -145,6 +151,17 @@ export function RepeatScreen() {
       },
       rating,
     );
+
+    await database.write(async () => {
+      await database.get<ReviewLog>('review_log').create(log => {
+        log.cardId = card.id;
+        log.themeId = card.themeId;
+        log.reviewedAt = new Date();
+        log.rating = rating;
+        log.isCorrect = isCorrect;
+        log.durationMs = durationMs;
+      });
+    });
 
     await updateCard({
       id: card.id,

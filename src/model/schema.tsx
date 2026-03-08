@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 1,
+  version: 2,
   tables: [
     tableSchema({
       name: 'user',
@@ -40,6 +40,17 @@ export default appSchema({
           isOptional: true,
         },
         { name: 'is_notification_sended', type: 'boolean' },
+      ],
+    }),
+    tableSchema({
+      name: 'review_log',
+      columns: [
+        { name: 'card_id', type: 'string', isIndexed: true },
+        { name: 'theme_id', type: 'string', isIndexed: true },
+        { name: 'reviewed_at', type: 'number', isIndexed: true },
+        { name: 'rating', type: 'string' },
+        { name: 'is_correct', type: 'boolean' },
+        { name: 'duration_ms', type: 'number' },
       ],
     }),
   ],
