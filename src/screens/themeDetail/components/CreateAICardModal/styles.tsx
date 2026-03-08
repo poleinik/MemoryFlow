@@ -28,6 +28,17 @@ export const styles = StyleSheet.create({
     fontWeight: FontWeights.medium,
     color: Colors.backgroundAccent3,
   },
+  headerActions: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  selectAllText: {
+    ...TextSizes.medium,
+    fontWeight: FontWeights.medium,
+    color: Colors.backgroundAccent,
+  },
   generatedListWrap: {
     maxHeight: 350,
   },
@@ -46,6 +57,30 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 10,
+  },
+  generatedCardUnchecked: {
+    opacity: 0.5,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: Colors.textForeground,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  checkboxChecked: {
+    backgroundColor: Colors.backgroundAccent3,
+    borderColor: Colors.backgroundAccent3,
+  },
+  checkmark: {
+    fontSize: 12,
+    fontWeight: FontWeights.bold,
+    color: Colors.textSecondary,
+    lineHeight: 14,
   },
   generatedBadge: {
     width: 24,

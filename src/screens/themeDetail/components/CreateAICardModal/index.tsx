@@ -1,5 +1,5 @@
 import { use, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, TextInput, Animated, ScrollView } from 'react-native';
+import { View, Text, TextInput, Animated, ScrollView, Pressable } from 'react-native';
 import SparkleIcon from 'assets/SparcleIcon';
 import { useGenerateCardQa } from 'src/api/useGenerateCardQa';
 import { Colors, FontWeights, TextSizes } from 'src/styles';
@@ -74,6 +74,7 @@ export const CreateAICardModal = ({ closeModal }: { closeModal: () => void }) =>
     const [isFocused, setIsFocused] = useState(false);
     const [loadingStepIndex, setLoadingStepIndex] = useState(0);
     const [generatedCards, setGeneratedCards] = useState<GeneratedCard[]>([]);
+    const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
     const [isAddingAll, setIsAddingAll] = useState(false);
     const { generateCardQa, isFetching, isError, isSuccess, data } = useGenerateCardQa();
     const { createCard } = useCreateCard();
@@ -92,23 +93,44 @@ export const CreateAICardModal = ({ closeModal }: { closeModal: () => void }) =>
 
     const handleGenerate = async () => {
         setGeneratedCards([]);
+        setSelectedIndices(new Set());
         await generateCardQa({ text: sourceText });
     };
 
     const handleBackToInput = () => {
         setGeneratedCards([]);
+        setSelectedIndices(new Set());
     };
 
+    const toggleCard = (index: number) => {
+        setSelectedIndices(prev => {
+            const next = new Set(prev);
+            if (next.has(index)) {
+                next.delete(index);
+            } else {
+                next.add(index);
+            }
+            return next;
+        });
+    };
+
+    const handleSelectAll = () => {
+        setSelectedIndices(new Set(generatedCards.map((_, i) => i)));
+    };
+
+    const selectedCount = selectedIndices.size;
+
     const handleAddAllCards = async () => {
-        if (!theme || !generatedCards.length || isAddingAll) {
+        if (!theme || !selectedCount || isAddingAll) {
             return;
         }
 
         setIsAddingAll(true);
 
         try {
+            const cardsToAdd = generatedCards.filter((_, i) => selectedIndices.has(i));
             await Promise.all(
-                generatedCards.map(card =>
+                cardsToAdd.map(card =>
                     createCard({
                         question: card.question,
                         answer: card.answer,
@@ -131,6 +153,7 @@ export const CreateAICardModal = ({ closeModal }: { closeModal: () => void }) =>
 
         const cards = normalizeGeneratedCards(data);
         setGeneratedCards(cards);
+        setSelectedIndices(new Set(cards.map((_, i) => i)));
     }, [data, isSuccess]);
 
     useEffect(() => {
@@ -243,9 +266,14 @@ export const CreateAICardModal = ({ closeModal }: { closeModal: () => void }) =>
                     <View style={styles.generatedHeaderRow}>
                         <Text style={styles.generatedReadyText}>{`Готово: ${generatedCards.length} карточек`}</Text>
 
-                        <TouchableScale activeOpacity={0.9} onPress={handleBackToInput}>
-                            <Text style={styles.retryText}>Заново</Text>
-                        </TouchableScale>
+                        <View style={styles.headerActions}>
+                            <TouchableScale activeOpacity={0.9} onPress={handleSelectAll}>
+                                <Text style={styles.selectAllText}>Выбрать все</Text>
+                            </TouchableScale>
+                            <TouchableScale activeOpacity={0.9} onPress={handleBackToInput}>
+                                <Text style={styles.retryText}>Заново</Text>
+                            </TouchableScale>
+                        </View>
                     </View>
 
                     <ScrollView
@@ -254,18 +282,25 @@ export const CreateAICardModal = ({ closeModal }: { closeModal: () => void }) =>
                         showsVerticalScrollIndicator={false}
                         nestedScrollEnabled
                     >
-                        {generatedCards.map((card, index) => (
-                            <View key={`${card.question}-${index}`} style={styles.generatedCard}>
-                                <View style={styles.generatedBadge}>
-                                    <Text style={styles.generatedBadgeText}>{index + 1}</Text>
-                                </View>
+                        {generatedCards.map((card, index) => {
+                            const isSelected = selectedIndices.has(index);
+                            return (
+                                <Pressable
+                                    key={`${card.question}-${index}`}
+                                    style={[styles.generatedCard, !isSelected && styles.generatedCardUnchecked]}
+                                    onPress={() => toggleCard(index)}
+                                >
+                                    <View style={[styles.checkbox, isSelected && styles.checkboxChecked]}>
+                                        {isSelected && <Text style={styles.checkmark}>✓</Text>}
+                                    </View>
 
-                                <View style={styles.generatedTextWrap}>
-                                    <Text style={styles.generatedQuestion}>{card.question}</Text>
-                                    <Text style={styles.generatedAnswer}>{card.answer}</Text>
-                                </View>
-                            </View>
-                        ))}
+                                    <View style={styles.generatedTextWrap}>
+                                        <Text style={styles.generatedQuestion}>{card.question}</Text>
+                                        <Text style={styles.generatedAnswer}>{card.answer}</Text>
+                                    </View>
+                                </Pressable>
+                            );
+                        })}
                     </ScrollView>
                         
 
@@ -286,10 +321,10 @@ export const CreateAICardModal = ({ closeModal }: { closeModal: () => void }) =>
                                 style={styles.addAllButton}
                                 activeOpacity={0.9}
                                 onPress={handleAddAllCards}
-                                disabled={isAddingAll}
+                                disabled={isAddingAll || !selectedCount}
                             >
                                 <Text style={styles.addAllButtonText}>
-                                    {isAddingAll ? 'Добавляю...' : 'Добавить все'}
+                                    {isAddingAll ? 'Добавляю...' : `Добавить (${selectedCount})`}
                                 </Text>
                             </TouchableScale>
                         </View>

@@ -45,6 +45,7 @@ const buildPrompt = (text: string) => {
 Текст: ${text}`;
 };
 
+
 const isModelUnavailableError = (errorMessage: string) => {
   const normalized = errorMessage.toLowerCase();
   return (
