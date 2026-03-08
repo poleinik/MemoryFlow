@@ -82,6 +82,31 @@ export const styles = StyleSheet.create({
     color: Colors.textSecondary,
     lineHeight: 14,
   },
+  checkboxColumn: {
+    paddingTop: 2,
+  },
+  editInput: {
+    ...TextSizes.medium,
+    fontWeight: FontWeights.bold,
+    color: Colors.textPrimary,
+    backgroundColor: Colors.backgroundSecondary,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    minHeight: 36,
+  },
+  editInputAnswer: {
+    fontWeight: FontWeights.regular,
+    ...TextSizes.small,
+    color: Colors.textForeground,
+  },
+  editDoneText: {
+    ...TextSizes.small,
+    fontWeight: FontWeights.semibold,
+    color: Colors.backgroundAccent3,
+    alignSelf: 'flex-end',
+    marginTop: 2,
+  },
   generatedBadge: {
     width: 24,
     height: 24,

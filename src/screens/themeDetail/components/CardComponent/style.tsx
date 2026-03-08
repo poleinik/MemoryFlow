@@ -55,4 +55,11 @@ export const styles = StyleSheet.create({
           fontWeight: FontWeights.bold,
           color: Colors.textPrimary,
         },
+        expandedScrollWrap: {
+          flex: 1,
+        },
+        expandedScrollContent: {
+          flexGrow: 1,
+          justifyContent: 'center',
+        },
     })

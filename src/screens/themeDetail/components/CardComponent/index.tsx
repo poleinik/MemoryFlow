@@ -2,7 +2,7 @@ import SparcleIcon from "assets/SparcleIcon"
 import OpenBookIcon from "assets/OpenBookIcon"
 import ClockIcon from "assets/ClockIcon"
 import CheckIcon from "assets/CheckIcon"
-import { View, Text } from "react-native"
+import { View, Text, ScrollView } from "react-native"
 import TouchableScale from "src/components/TouchableScale"
 import { StatusCard } from "src/model/consts"
 import { Colors, TextSizes, layout } from "src/styles"
@@ -132,7 +132,14 @@ export const CardComponent = ({
         return (
             <View style={styles.expandedCard}>
                 <Text style={styles.expandedLabel}>{showAnswer ? 'Ответ' : 'Вопрос'}</Text>
-                <Text style={styles.expandedText}>{showAnswer ? answer : question}</Text>
+                <ScrollView
+                    style={styles.expandedScrollWrap}
+                    contentContainerStyle={styles.expandedScrollContent}
+                    showsVerticalScrollIndicator={false}
+                    nestedScrollEnabled
+                >
+                    <Text style={styles.expandedText}>{showAnswer ? answer : question}</Text>
+                </ScrollView>
                 <Text style={{ ...TextSizes.small, color: Colors.textForeground }}>
                     Нажмите, чтобы перевернуть
                 </Text>

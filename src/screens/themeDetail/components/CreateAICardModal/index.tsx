@@ -75,6 +75,7 @@ export const CreateAICardModal = ({ closeModal }: { closeModal: () => void }) =>
     const [loadingStepIndex, setLoadingStepIndex] = useState(0);
     const [generatedCards, setGeneratedCards] = useState<GeneratedCard[]>([]);
     const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
+    const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [isAddingAll, setIsAddingAll] = useState(false);
     const { generateCardQa, isFetching, isError, isSuccess, data } = useGenerateCardQa();
     const { createCards } = useCreateCards();
@@ -116,6 +117,12 @@ export const CreateAICardModal = ({ closeModal }: { closeModal: () => void }) =>
 
     const handleSelectAll = () => {
         setSelectedIndices(new Set(generatedCards.map((_, i) => i)));
+    };
+
+    const updateCard = (index: number, field: 'question' | 'answer', value: string) => {
+        setGeneratedCards(prev =>
+            prev.map((card, i) => (i === index ? { ...card, [field]: value } : card)),
+        );
     };
 
     const selectedCount = selectedIndices.size;
@@ -276,20 +283,60 @@ export const CreateAICardModal = ({ closeModal }: { closeModal: () => void }) =>
                     >
                         {generatedCards.map((card, index) => {
                             const isSelected = selectedIndices.has(index);
+                            const isEditing = editingIndex === index;
                             return (
                                 <Pressable
-                                    key={`${card.question}-${index}`}
+                                    key={`card-${index}`}
                                     style={[styles.generatedCard, !isSelected && styles.generatedCardUnchecked]}
-                                    onPress={() => toggleCard(index)}
+                                    onPress={() => {
+                                        if (isEditing) return;
+                                        toggleCard(index);
+                                    }}
                                 >
-                                    <View style={[styles.checkbox, isSelected && styles.checkboxChecked]}>
-                                        {isSelected && <Text style={styles.checkmark}>✓</Text>}
+                                    <View style={styles.checkboxColumn}>
+                                        <Pressable
+                                            style={[styles.checkbox, isSelected && styles.checkboxChecked]}
+                                            onPress={() => toggleCard(index)}
+                                            hitSlop={8}
+                                        >
+                                            {isSelected && <Text style={styles.checkmark}>✓</Text>}
+                                        </Pressable>
                                     </View>
 
-                                    <View style={styles.generatedTextWrap}>
-                                        <Text style={styles.generatedQuestion}>{card.question}</Text>
-                                        <Text style={styles.generatedAnswer}>{card.answer}</Text>
-                                    </View>
+                                    {isEditing ? (
+                                        <View style={styles.generatedTextWrap}>
+                                            <TextInput
+                                                style={styles.editInput}
+                                                value={card.question}
+                                                onChangeText={v => updateCard(index, 'question', v)}
+                                                multiline
+                                                placeholder="Вопрос"
+                                                placeholderTextColor={Colors.placeholder}
+                                            />
+                                            <TextInput
+                                                style={[styles.editInput, styles.editInputAnswer]}
+                                                value={card.answer}
+                                                onChangeText={v => updateCard(index, 'answer', v)}
+                                                multiline
+                                                placeholder="Ответ"
+                                                placeholderTextColor={Colors.placeholder}
+                                            />
+                                            <TouchableScale
+                                                activeOpacity={0.9}
+                                                onPress={() => setEditingIndex(null)}
+                                            >
+                                                <Text style={styles.editDoneText}>Готово</Text>
+                                            </TouchableScale>
+                                        </View>
+                                    ) : (
+                                        <Pressable
+                                            style={styles.generatedTextWrap}
+                                            onPress={() => setEditingIndex(index)}
+                                        >
+                                            <Text style={styles.generatedQuestion}>{card.question}</Text>
+                                            <Text style={styles.generatedAnswer}>{card.answer}</Text>
+                                        </Pressable>
+                                    )}
                                 </Pressable>
                             );
                         })}
