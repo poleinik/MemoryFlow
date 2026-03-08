@@ -5,7 +5,7 @@ import { useGenerateCardQa } from 'src/api/useGenerateCardQa';
 import { Colors, FontWeights, TextSizes } from 'src/styles';
 import { styles } from './styles';
 import TouchableScale from 'src/components/TouchableScale';
-import { useCreateCard } from 'src/api/useCreateCard';
+import { useCreateCards } from 'src/api/useCreateCards';
 import { useGetTheme } from 'src/hooks/useGetTheme';
 
 const loadingSteps = [
@@ -77,7 +77,7 @@ export const CreateAICardModal = ({ closeModal }: { closeModal: () => void }) =>
     const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
     const [isAddingAll, setIsAddingAll] = useState(false);
     const { generateCardQa, isFetching, isError, isSuccess, data } = useGenerateCardQa();
-    const { createCard } = useCreateCard();
+    const { createCards } = useCreateCards();
     const { theme, fetch } = useGetTheme();
     const pulseValue = useRef(new Animated.Value(0)).current;
     const progressValue = useRef(new Animated.Value(0)).current;
@@ -129,15 +129,7 @@ export const CreateAICardModal = ({ closeModal }: { closeModal: () => void }) =>
 
         try {
             const cardsToAdd = generatedCards.filter((_, i) => selectedIndices.has(i));
-            await Promise.all(
-                cardsToAdd.map(card =>
-                    createCard({
-                        question: card.question,
-                        answer: card.answer,
-                        themeId: theme.id,
-                    }),
-                ),
-            );
+            await createCards({ cards: cardsToAdd, themeId: theme.id });
 
             await fetch(theme.id);
             closeModal();
