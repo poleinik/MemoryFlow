@@ -3,12 +3,12 @@ import { Colors, FontWeights, TextSizes } from 'src/styles';
 
 export const styles = StyleSheet.create({
   modalContentWrap: {
-    maxHeight: '80%',
   },
   generatedContainer: {
-    maxHeight: '100%',
+    // maxHeight: '100%',
     display: 'flex',
     flexDirection: 'column',
+    padding: 16,
     gap: 12,
   },
   generatedHeaderRow: {
@@ -29,7 +29,7 @@ export const styles = StyleSheet.create({
     color: Colors.backgroundAccent3,
   },
   generatedListWrap: {
-    flexGrow: 1,
+    maxHeight: 350,
   },
   generatedListContent: {
     display: 'flex',
@@ -179,7 +179,9 @@ export const styles = StyleSheet.create({
     display: 'flex',
     flexDirection: 'column',
     gap: 16,
-    paddingHorizontal: 4,
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 16,
   },
   headerRow: {
     display: 'flex',

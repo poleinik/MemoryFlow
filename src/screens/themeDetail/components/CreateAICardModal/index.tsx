@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { use, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TextInput, Animated, ScrollView } from 'react-native';
 import SparkleIcon from 'assets/SparcleIcon';
 import { useGenerateCardQa } from 'src/api/useGenerateCardQa';
 import { Colors, FontWeights, TextSizes } from 'src/styles';
 import { styles } from './styles';
-import { layout } from 'src/styles';
 import TouchableScale from 'src/components/TouchableScale';
 import { useCreateCard } from 'src/api/useCreateCard';
 import { useGetTheme } from 'src/hooks/useGetTheme';
@@ -86,6 +85,10 @@ export const CreateAICardModal = ({ closeModal }: { closeModal: () => void }) =>
         () => `${sourceText.length} символов`,
         [sourceText.length],
     );
+
+    useEffect(() => {
+        console.log('Generated cards:', generatedCards);
+    },[generatedCards])
 
     const handleGenerate = async () => {
         setGeneratedCards([]);
@@ -231,7 +234,9 @@ export const CreateAICardModal = ({ closeModal }: { closeModal: () => void }) =>
         );
     }
 
+
     if (generatedCards.length > 0) {
+        console.log('Rendering with generatedCards:', generatedCards.length);
         return (
             <View style={styles.modalContentWrap}>
                 <View style={styles.generatedContainer}>
@@ -247,6 +252,7 @@ export const CreateAICardModal = ({ closeModal }: { closeModal: () => void }) =>
                         style={styles.generatedListWrap}
                         contentContainerStyle={styles.generatedListContent}
                         showsVerticalScrollIndicator={false}
+                        nestedScrollEnabled
                     >
                         {generatedCards.map((card, index) => (
                             <View key={`${card.question}-${index}`} style={styles.generatedCard}>
@@ -261,6 +267,7 @@ export const CreateAICardModal = ({ closeModal }: { closeModal: () => void }) =>
                             </View>
                         ))}
                     </ScrollView>
+                        
 
                     <View style={styles.generatedButtonsRow}>
                         <TouchableScale
@@ -287,11 +294,10 @@ export const CreateAICardModal = ({ closeModal }: { closeModal: () => void }) =>
             </View>
         );
     }
-
     return (
         <View style={styles.modalContentWrap}>
             <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
-                <View style={layout.container}>
+                <View style={styles.container}>
                     <View style={styles.headerRow}>
                         <View style={styles.iconBox}>
                             <SparkleIcon width={20} height={20} color={Colors.textSecondary} />
@@ -315,7 +321,7 @@ export const CreateAICardModal = ({ closeModal }: { closeModal: () => void }) =>
                         </Text>
                         <TextInput
                             multiline
-                            maxLength={1000}
+                            maxLength={5000}
                             placeholder="Вставьте сюда текст из учебника, статьи или конспекта..."
                             placeholderTextColor={Colors.placeholder}
                             value={sourceText}

@@ -1,7 +1,6 @@
 import {
   forwardRef,
   PropsWithChildren,
-  useEffect,
   useImperativeHandle,
   useRef,
 } from 'react';
@@ -19,16 +18,12 @@ type ModalProps = PropsWithChildren<{
   enableKeyboardAvoiding?: boolean;
 }>;
 
+
 export const Modal = forwardRef<ModalHandle, ModalProps>(
   ({ children, enableKeyboardAvoiding = false }, ref) => {
     const modalRef = useRef<Modalize>(null);
-    const insets = useSafeAreaInsets();
-    const iosBottomInset = insets.bottom || 20;
-    const androidBottomInset = insets.bottom || 0;
-    useEffect(() => {
-      console.log('Modal mounted, insets:', insets);
-    }, [insets]);
-    
+    const { bottom } = useSafeAreaInsets();
+
     useImperativeHandle(
       ref,
       () => ({
@@ -42,20 +37,12 @@ export const Modal = forwardRef<ModalHandle, ModalProps>(
       <Modalize
         ref={modalRef}
         adjustToContentHeight={true}
-        avoidKeyboardLikeIOS={enableKeyboardAvoiding}
-        keyboardAvoidingBehavior={
-          enableKeyboardAvoiding
-            ? Platform.OS === 'ios'
-              ? 'padding'
-              : 'position'
-            : undefined
-        }
-        keyboardAvoidingOffset={
-          enableKeyboardAvoiding && Platform.OS === 'ios' ? iosBottomInset : 0
-        }
+        avoidKeyboardLikeIOS={enableKeyboardAvoiding && Platform.OS === 'ios'}
+        keyboardAvoidingBehavior="padding"
+        keyboardAvoidingOffset={0}
         childrenStyle={{
           ...styles.container,
-          marginBottom: Platform.OS === 'ios' ? iosBottomInset : androidBottomInset,
+          paddingBottom: Math.max(bottom, 16),
         }}
       >
         {children}
