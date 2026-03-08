@@ -270,25 +270,29 @@ export const CreateAICardModal = ({ closeModal }: { closeModal: () => void }) =>
                         
 
                     <View style={styles.generatedButtonsRow}>
-                        <TouchableScale
-                            style={styles.backButton}
-                            activeOpacity={0.9}
-                            onPress={handleBackToInput}
-                            disabled={isAddingAll}
-                        >
-                            <Text style={styles.backButtonText}>Назад</Text>
-                        </TouchableScale>
+                        <View style={{flex: 1}}>
+                            <TouchableScale
+                                style={styles.backButton}
+                                activeOpacity={0.9}
+                                onPress={handleBackToInput}
+                                disabled={isAddingAll}
+                            >
+                                <Text style={styles.backButtonText}>Назад</Text>
+                            </TouchableScale>
+                        </View>
 
-                        <TouchableScale
-                            style={styles.addAllButton}
-                            activeOpacity={0.9}
-                            onPress={handleAddAllCards}
-                            disabled={isAddingAll}
-                        >
-                            <Text style={styles.addAllButtonText}>
-                                {isAddingAll ? 'Добавляю...' : 'Добавить все'}
-                            </Text>
-                        </TouchableScale>
+                        <View style={{flex: 1}}>
+                            <TouchableScale
+                                style={styles.addAllButton}
+                                activeOpacity={0.9}
+                                onPress={handleAddAllCards}
+                                disabled={isAddingAll}
+                            >
+                                <Text style={styles.addAllButtonText}>
+                                    {isAddingAll ? 'Добавляю...' : 'Добавить все'}
+                                </Text>
+                            </TouchableScale>
+                        </View>
                     </View>
                 </View>
             </View>
@@ -321,6 +325,7 @@ export const CreateAICardModal = ({ closeModal }: { closeModal: () => void }) =>
                         </Text>
                         <TextInput
                             multiline
+                            scrollEnabled
                             maxLength={5000}
                             placeholder="Вставьте сюда текст из учебника, статьи или конспекта..."
                             placeholderTextColor={Colors.placeholder}

@@ -220,6 +220,7 @@ export const styles = StyleSheet.create({
   },
   input: {
     minHeight: 132,
+    maxHeight: 200,
     borderRadius: 12,
     backgroundColor: Colors.backgroundSecondary,
     borderWidth: 1,
