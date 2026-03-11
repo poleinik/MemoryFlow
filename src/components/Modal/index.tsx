@@ -1,10 +1,12 @@
 import {
   forwardRef,
   PropsWithChildren,
+  useEffect,
   useImperativeHandle,
   useRef,
+  useState,
 } from 'react';
-import { Platform } from 'react-native';
+import { Keyboard, Platform } from 'react-native';
 import styles from './style';
 import { Modalize } from 'react-native-modalize';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,6 +25,26 @@ export const Modal = forwardRef<ModalHandle, ModalProps>(
   ({ children, enableKeyboardAvoiding = false }, ref) => {
     const modalRef = useRef<Modalize>(null);
     const { bottom } = useSafeAreaInsets();
+    const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+    useEffect(() => {
+      if (!enableKeyboardAvoiding) return;
+
+      const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+      const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+      const showSub = Keyboard.addListener(showEvent, (e) => {
+        setKeyboardHeight(e.endCoordinates.height);
+      });
+      const hideSub = Keyboard.addListener(hideEvent, () => {
+        setKeyboardHeight(0);
+      });
+
+      return () => {
+        showSub.remove();
+        hideSub.remove();
+      };
+    }, [enableKeyboardAvoiding]);
 
     useImperativeHandle(
       ref,
@@ -33,16 +55,15 @@ export const Modal = forwardRef<ModalHandle, ModalProps>(
       [],
     );
 
+    const bottomPadding = keyboardHeight > 0 ? keyboardHeight : Math.max(bottom, 16);
+
     return (
       <Modalize
         ref={modalRef}
         adjustToContentHeight={true}
-        avoidKeyboardLikeIOS={enableKeyboardAvoiding && Platform.OS === 'ios'}
-        keyboardAvoidingBehavior="padding"
-        keyboardAvoidingOffset={0}
         childrenStyle={{
           ...styles.container,
-          paddingBottom: Math.max(bottom, 16),
+          paddingBottom: bottomPadding,
         }}
       >
         {children}
