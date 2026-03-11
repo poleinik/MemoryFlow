@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   LayoutChangeEvent,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -120,7 +121,9 @@ export function RepeatScreen() {
   const shouldPlaceSupplementOnSide = isLandscape;
   const sideContentGap = 12;
   const sideContentWidth = Math.min(240, Math.max(164, screenWidth * 0.24));
-  const availableHeight = Math.max(220, screenHeight - reviewHeaderHeight - (isLandscape ? 64 : 120));
+  const ratingAreaHeight = isLandscape ? 0 : 110;
+  const flippedExtra = isCardFlipped ? ratingAreaHeight : 0;
+  const availableHeight = Math.max(220, screenHeight - reviewHeaderHeight - (isLandscape ? 64 : 120) - flippedExtra);
   const maxWidthByScreen = Math.max(240, screenWidth - horizontalPadding * 2);
   const maxWidthByHeight = availableHeight * cardAspectRatio;
   const maxCardWidthByLayout = shouldPlaceSupplementOnSide
@@ -260,7 +263,13 @@ export function RepeatScreen() {
                       <View style={styles.expandedLabelContainer}>
                         <Text style={styles.expandedLabel}>Ответ</Text>
                       </View>
-                      <Text style={styles.expandedAnswer}>{currentCard.answer}</Text>
+                      <ScrollView
+                        contentContainerStyle={styles.answerScrollContent}
+                        showsVerticalScrollIndicator={false}
+                        bounces={false}
+                      >
+                        <Text style={styles.expandedAnswer}>{currentCard.answer}</Text>
+                      </ScrollView>
                     </View>
                   }
                 />
@@ -427,6 +436,10 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     fontWeight: FontWeights.medium,
     textAlign: 'center',
+  },
+  answerScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
   },
   flipHint: {
     ...TextSizes.small,

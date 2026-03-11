@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef } from 'react';
-import { View, Text, TouchableOpacity, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors, FontWeights, layout, TextSizes } from 'src/styles';
@@ -74,6 +74,12 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
   return (
     <SwipeNavigationView onSwipeRight={handleSwipeBack}>
       <View style={layout.container}>
+        <ScrollView
+          style={{ flex: 1, margin: -16 }}
+          contentContainerStyle={{ padding: 16, gap: 24 }}
+          showsVerticalScrollIndicator={false}
+          stickyHeaderIndices={[2]}
+        >
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <TouchableOpacity
             activeOpacity={0.9}
@@ -89,8 +95,10 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
             {theme?.description}
           </Text>
         </View>
-        <Progress total={totalCards} completed={completedCards} />
-        <View style={{ flexDirection: 'row', gap: 16 }}>
+
+        <View style={stickyStyles.stickyRow}>
+          <Progress total={totalCards} completed={completedCards} />
+          <View style={{ flexDirection: 'row', gap: 16 }}>
           <TouchableScale
             style={{
               ...layout.block,
@@ -142,71 +150,68 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
               Добавить карточку
             </Text>
           </TouchableScale>
+          </View>
         </View>
 
-        <View style={{ flex: 1 }}>
+        <View>
           <Text style={layout.header3}>Карточки</Text>
-          <FlatList
-            data={cards ?? []}
-            style={{ flex: 1 }}
-            contentContainerStyle={{  display: 'flex',
-      flexDirection: 'column',
-      gap: 12,}}
-            showsVerticalScrollIndicator={false}
-            keyExtractor={item => String(item.id)}
-            renderItem={({ item }) => {
-              const cardStatus =
-                item.status as (typeof StatusCard)[keyof typeof StatusCard];
-
-              return (
-                <ExpandableCard
-                  renderPreview={({ onPress }) => (
-                    <CardComponent
-                      id={String(item.id)}
-                      question={item.question}
-                      answer={item.answer}
-                      status={cardStatus}
-                      nextReviewAt={item.nextReviewAt}
-                      onPress={onPress}
-                    />
-                  )}
-                  renderExpandedContent={({ cardWidth, cardHeight }) => (
-                    <FlipCard
-                      style={{ width: cardWidth, height: cardHeight }}
-                      frontContent={
-                        <CardComponent
-                          id={String(item.id)}
-                          question={item.question}
-                          answer={item.answer}
-                          status={cardStatus}
-                          nextReviewAt={item.nextReviewAt}
-                          mode="expanded"
-                          showAnswer={false}
-                        />
-                      }
-                      backContent={
-                        <CardComponent
-                          id={String(item.id)}
-                          question={item.question}
-                          answer={item.answer}
-                          status={cardStatus}
-                          nextReviewAt={item.nextReviewAt}
-                          mode="expanded"
-                          showAnswer={true}
-                        />
-                      }
-                    />
-                  )}
-                />
-              );
-            }}
-            ListEmptyComponent={
+          <View style={{ gap: 12, marginTop: 12 }}>
+            {(cards ?? []).length === 0 ? (
               <Text style={{ ...TextSizes.small, color: Colors.textForeground }}>
                 Пока нет карточек
               </Text>
-            }
-          />
+            ) : (
+              (cards ?? []).map(item => {
+                const cardStatus =
+                  item.status as (typeof StatusCard)[keyof typeof StatusCard];
+
+                return (
+                  <ExpandableCard
+                    key={String(item.id)}
+                    renderPreview={({ onPress }) => (
+                      <CardComponent
+                        id={String(item.id)}
+                        question={item.question}
+                        answer={item.answer}
+                        status={cardStatus}
+                        nextReviewAt={item.nextReviewAt}
+                        onPress={onPress}
+                      />
+                    )}
+                    renderExpandedContent={({ cardWidth, cardHeight }) => (
+                      <FlipCard
+                        style={{ width: cardWidth, height: cardHeight }}
+                        frontContent={
+                          <CardComponent
+                            id={String(item.id)}
+                            question={item.question}
+                            answer={item.answer}
+                            status={cardStatus}
+                            nextReviewAt={item.nextReviewAt}
+                            mode="expanded"
+                            showAnswer={false}
+                          />
+                        }
+                        backContent={
+                          <CardComponent
+                            id={String(item.id)}
+                            question={item.question}
+                            answer={item.answer}
+                            status={cardStatus}
+                            nextReviewAt={item.nextReviewAt}
+                            mode="expanded"
+                            showAnswer={true}
+                          />
+                        }
+                      />
+                    )}
+                  />
+                );
+              })
+            )}
+          </View>
         </View>
+        </ScrollView>
 
         {/* Плавающая кнопка для генерации карточек с ИИ */}
        <AICreateBtn />
@@ -220,3 +225,11 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
     </SwipeNavigationView>
   );
 };
+
+const stickyStyles = StyleSheet.create({
+  stickyRow: {
+    backgroundColor: Colors.backgroundPrimary,
+    paddingBottom: 8,
+    gap: 16,
+  },
+});
