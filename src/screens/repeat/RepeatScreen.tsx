@@ -52,6 +52,8 @@ export function RepeatScreen() {
   const [completedCardIds, setCompletedCardIds] = useState<Set<string>>(new Set());
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [reviewHeaderHeight, setReviewHeaderHeight] = useState(0);
+  const [ratingContentHeight, setRatingContentHeight] = useState(0);
+  const [reviewBodyHeight, setReviewBodyHeight] = useState(0);
   const cardShownAtRef = useRef<number>(Date.now());
 
   const fetchCardsForRepeat = useCallback(async () => {
@@ -63,11 +65,13 @@ export function RepeatScreen() {
       !!params.reviewRequestId &&
       handledRequestIdRef.current !== params.reviewRequestId;
 
+    
     const themeId = isThemeRequest ? params.themeId : undefined;
 
     if (isThemeRequest && params.reviewRequestId) {
       handledRequestIdRef.current = params.reviewRequestId;
     }
+    
 
     const cardsCollection = database.get<Card>('cards');
     const scopeConditions = themeId ? [Q.where('theme_id', themeId)] : [];
@@ -121,17 +125,27 @@ export function RepeatScreen() {
   const shouldPlaceSupplementOnSide = isLandscape;
   const sideContentGap = 12;
   const sideContentWidth = Math.min(240, Math.max(164, screenWidth * 0.24));
-  const ratingAreaHeight = isLandscape ? 0 : 110;
-  const flippedExtra = isCardFlipped ? ratingAreaHeight : 0;
-  const availableHeight = Math.max(220, screenHeight - reviewHeaderHeight - (isLandscape ? 64 : 120) - flippedExtra);
+  const availableHeight = Math.max(220, screenHeight - reviewHeaderHeight - (isLandscape ? 64 : 120));
   const maxWidthByScreen = Math.max(240, screenWidth - horizontalPadding * 2);
   const maxWidthByHeight = availableHeight * cardAspectRatio;
   const maxCardWidthByLayout = shouldPlaceSupplementOnSide
     ? Math.max(220, maxWidthByScreen - sideContentWidth - sideContentGap)
     : maxWidthByScreen;
   const requestedWidth = (screenWidth * (isLandscape ? 98 : 90)) / 100;
-  const cardWidth = Math.min(requestedWidth, maxCardWidthByLayout, maxWidthByHeight);
-  const cardHeight = cardWidth / cardAspectRatio;
+
+  const useFlippedLayout = isCardFlipped && !isLandscape;
+  const contentGap = 12;
+  const estimatedRating = ratingContentHeight > 0 ? ratingContentHeight : 110;
+  const flippedCardHeight = reviewBodyHeight > 0
+    ? Math.max(200, reviewBodyHeight - estimatedRating - contentGap)
+    : Math.max(200, availableHeight - estimatedRating - contentGap);
+
+  const cardWidth = useFlippedLayout
+    ? Math.min(requestedWidth, maxCardWidthByLayout)
+    : Math.min(requestedWidth, maxCardWidthByLayout, maxWidthByHeight);
+  const cardHeight = useFlippedLayout
+    ? flippedCardHeight
+    : cardWidth / cardAspectRatio;
 
   useEffect(() => {
     setIsCardFlipped(false);
@@ -196,6 +210,14 @@ export function RepeatScreen() {
     setReviewHeaderHeight(height);
   };
 
+  const handleRatingLayout = (event: LayoutChangeEvent) => {
+    setRatingContentHeight(event.nativeEvent.layout.height);
+  };
+
+  const handleReviewBodyLayout = (event: LayoutChangeEvent) => {
+    setReviewBodyHeight(event.nativeEvent.layout.height);
+  };
+
   return (
     <SwipeNavigationView onSwipeLeft={onSwipeLeft} onSwipeRight={onSwipeRight}>
       <View style={layout.container}>
@@ -237,7 +259,7 @@ export function RepeatScreen() {
               </View>
             </View>
 
-            <View style={[styles.reviewBody, { paddingHorizontal: horizontalPadding }]}> 
+            <View style={[styles.reviewBody, { paddingHorizontal: horizontalPadding }]} onLayout={handleReviewBodyLayout}> 
               <View
                 style={[
                   styles.cardAndRatingContainer,
@@ -276,6 +298,7 @@ export function RepeatScreen() {
 
                 {isCardFlipped ? (
                   <View
+                    onLayout={handleRatingLayout}
                     style={[
                       styles.ratingContent,
                       shouldPlaceSupplementOnSide
