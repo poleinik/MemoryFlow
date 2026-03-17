@@ -1,13 +1,17 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 2,
+  version: 4,
   tables: [
     tableSchema({
       name: 'user',
       columns: [
         { name: 'name', type: 'string' },
         { name: 'email', type: 'string', isOptional: true },
+        { name: 'avatar_uri', type: 'string', isOptional: true },
+        { name: 'notification_hour', type: 'number' },
+        { name: 'notification_minute', type: 'number' },
+        { name: 'ai_config', type: 'string', isOptional: true },
         { name: 'created_at', type: 'number' },
       ],
     }),

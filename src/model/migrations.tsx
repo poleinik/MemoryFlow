@@ -1,10 +1,35 @@
 import {
+  addColumns,
   createTable,
   schemaMigrations,
 } from '@nozbe/watermelondb/Schema/migrations';
 
 export default schemaMigrations({
   migrations: [
+    {
+      toVersion: 4,
+      steps: [
+        addColumns({
+          table: 'user',
+          columns: [
+            { name: 'avatar_uri', type: 'string', isOptional: true },
+          ],
+        }),
+      ],
+    },
+    {
+      toVersion: 3,
+      steps: [
+        addColumns({
+          table: 'user',
+          columns: [
+            { name: 'notification_hour', type: 'number' },
+            { name: 'notification_minute', type: 'number' },
+            { name: 'ai_config', type: 'string', isOptional: true },
+          ],
+        }),
+      ],
+    },
     {
       toVersion: 2,
       steps: [
