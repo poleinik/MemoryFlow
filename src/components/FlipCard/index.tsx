@@ -2,9 +2,9 @@ import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
+  GestureResponderEvent,
   StyleProp,
   StyleSheet,
-  TouchableOpacity,
   ViewStyle,
 } from 'react-native';
 
@@ -89,6 +89,36 @@ export default function FlipCard({
     animateTo(nextValue);
   };
 
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+
+  const handleTouchStart = (e: GestureResponderEvent) => {
+    touchStartRef.current = {
+      x: e.nativeEvent.pageX,
+      y: e.nativeEvent.pageY,
+      time: Date.now(),
+    };
+  };
+
+  const handleTouchEnd = (e: GestureResponderEvent) => {
+    if (!touchStartRef.current || disabled) {
+      touchStartRef.current = null;
+      return;
+    }
+
+    const dx = e.nativeEvent.pageX - touchStartRef.current.x;
+    const dy = e.nativeEvent.pageY - touchStartRef.current.y;
+    const dt = Date.now() - touchStartRef.current.time;
+    touchStartRef.current = null;
+
+    if (Math.abs(dx) < 10 && Math.abs(dy) < 10 && dt < 300) {
+      toggleFlip();
+    }
+  };
+
+  const handleTouchCancel = () => {
+    touchStartRef.current = null;
+  };
+
   useEffect(() => {
     if (isFlipped === undefined) {
       return;
@@ -99,14 +129,17 @@ export default function FlipCard({
   }, [isFlipped, flipDuration]);
 
   return (
-    <TouchableOpacity activeOpacity={1} onPress={toggleFlip} disabled={disabled}>
-      <Animated.View style={[styles.cardContainer, style]}>
-        <Animated.View style={[styles.face, frontFaceStyle]}>{frontContent}</Animated.View>
-        <Animated.View style={[styles.face, styles.backFace, backFaceStyle]}>
-          {backContent}
-        </Animated.View>
+    <Animated.View
+      style={[styles.cardContainer, style]}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchCancel}
+    >
+      <Animated.View style={[styles.face, frontFaceStyle]}>{frontContent}</Animated.View>
+      <Animated.View style={[styles.face, styles.backFace, backFaceStyle]}>
+        {backContent}
       </Animated.View>
-    </TouchableOpacity>
+    </Animated.View>
   );
 }
 

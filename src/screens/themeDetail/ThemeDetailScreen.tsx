@@ -78,7 +78,7 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
           style={{ flex: 1, margin: -16 }}
           contentContainerStyle={{ padding: 16, gap: 24 }}
           showsVerticalScrollIndicator={false}
-          stickyHeaderIndices={[2]}
+          stickyHeaderIndices={[3]}
         >
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <TouchableOpacity
@@ -96,8 +96,9 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
           </Text>
         </View>
 
+        <Progress total={totalCards} completed={completedCards} />
+
         <View style={stickyStyles.stickyRow}>
-          <Progress total={totalCards} completed={completedCards} />
           <View style={{ flexDirection: 'row', gap: 16 }}>
           <TouchableScale
             style={{
@@ -229,7 +230,7 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
 const stickyStyles = StyleSheet.create({
   stickyRow: {
     backgroundColor: Colors.backgroundPrimary,
+    paddingTop: 8,
     paddingBottom: 8,
-    gap: 16,
   },
 });
