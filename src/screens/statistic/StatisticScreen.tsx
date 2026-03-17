@@ -115,7 +115,7 @@ export function StatisticScreen() {
 
   return (
     <SwipeNavigationView onSwipeLeft={onSwipeLeft} onSwipeRight={onSwipeRight}>
-      <ScrollView style={layout.container} showsVerticalScrollIndicator={false}>
+      <ScrollView style={layout.container} contentContainerStyle={{ gap: 16 }} showsVerticalScrollIndicator={false}>
         <Text style={layout.header1}>Статистика</Text>
 
         {/* Stats Cards 2x2 */}
