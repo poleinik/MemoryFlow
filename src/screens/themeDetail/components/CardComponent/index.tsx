@@ -2,6 +2,7 @@ import SparcleIcon from "assets/SparcleIcon"
 import OpenBookIcon from "assets/OpenBookIcon"
 import ClockIcon from "assets/ClockIcon"
 import CheckIcon from "assets/CheckIcon"
+import TrashIcon from "assets/TrashIcon"
 import { View, Text, ScrollView } from "react-native"
 import TouchableScale from "src/components/TouchableScale"
 import { StatusCard } from "src/model/consts"
@@ -25,6 +26,7 @@ type CardComponentProps = {
     mode?: CardMode;
     showAnswer?: boolean;
     onPress?: () => void;
+    onDelete?: () => void;
 };
 
 const formatDaysWord = (days: number) => {
@@ -97,6 +99,7 @@ export const CardComponent = ({
     mode = 'compact',
     showAnswer = false,
     onPress,
+    onDelete,
 }: CardComponentProps) => {
     const isMastered = status === StatusCard.MASTERED;
     const isReviewDue =
@@ -162,6 +165,15 @@ export const CardComponent = ({
                         {getCompactDescription({ status, nextReviewAt, isReviewDue })}
                     </Text>
                 </View>
+                {onDelete && (
+                    <TouchableScale
+                        activeScale={0.85}
+                        onPress={onDelete}
+                        style={styles.deleteButton}
+                    >
+                        <TrashIcon width={18} height={18} color={Colors.textForeground} />
+                    </TouchableScale>
+                )}
             </View>
         </TouchableScale>
     );

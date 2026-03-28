@@ -33,7 +33,7 @@ export default function TouchableScale({
   };
 
   return (
-    <TouchableOpacity activeOpacity={activeOpacity} onPressIn={handlePressIn} onPressOut={handlePressOut} onPress={rest?.onPress || undefined}>
+    <TouchableOpacity activeOpacity={activeOpacity} onPressIn={handlePressIn} onPressOut={handlePressOut} onPress={rest?.onPress || undefined} onLongPress={rest?.onLongPress || undefined}>
       <Animated.View style={[{ transform: [{ scale }] }, style]}>
         {children}
       </Animated.View>

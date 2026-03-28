@@ -1,26 +1,262 @@
-import { View, Text, FlatList } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  Alert,
+  Animated,
+  PanResponder,
+} from 'react-native';
 import EmptyThemesIcon from 'assets/EmptyThemesIcon';
 import { Colors, TextSizes, FontWeights } from 'src/styles';
 import PlusIcon from 'assets/PlusIcon';
+import TrashIcon from 'assets/TrashIcon';
 import TouchableScale from 'src/components/TouchableScale';
 import { Portal } from 'react-native-portalize';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Modal, ModalHandle } from 'src/components/Modal';
 import { CreateThemeModal } from '../CreateThemeModal';
 import { ThemeCard } from '../ThemeCard';
 import { useGetThemes } from 'src/hooks/useGetThemes';
 import { useNavigation } from '@react-navigation/native';
-import styles from '../TodayBoard/styles';
+import { useDeleteTheme } from 'src/api/useDeleteTheme';
+import todayBoardStyles from '../TodayBoard/styles';
+import type Theme from 'src/model/Themes';
+
+const DELETE_ZONE_HEIGHT = 72;
 
 export function ThemeBoard() {
   const navigation = useNavigation();
   const { themes, fetch } = useGetThemes();
+  const { deleteTheme } = useDeleteTheme();
+
   useEffect(() => {
     fetch();
   }, []);
+
   const modalRef = useRef<ModalHandle>(null);
   const openModal = () => modalRef?.current?.openModal();
   const closeModal = () => modalRef?.current?.closeModal();
+
+  // ── Drag-to-delete state ──
+  const isDraggingRef = useRef(false);
+  const panGrantedRef = useRef(false);
+  const draggingItemRef = useRef<{ id: string; title: string } | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [scrollEnabled, setScrollEnabled] = useState(true);
+  const isOverDeleteRef = useRef(false);
+  const [isOverDelete, setIsOverDelete] = useState(false);
+
+  const translateX = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(0)).current;
+  const deleteZoneOpacity = useRef(new Animated.Value(0)).current;
+  const cardScale = useRef(new Animated.Value(1)).current;
+
+  const containerRef = useRef<View>(null);
+  const containerPageY = useRef(0);
+  const startDx = useRef(0);
+  const startDy = useRef(0);
+
+  // Stable refs for callbacks used inside PanResponder
+  const deleteThemeRef = useRef(deleteTheme);
+  deleteThemeRef.current = deleteTheme;
+  const fetchRef = useRef(fetch);
+  fetchRef.current = fetch;
+
+  const resetDrag = useCallback(() => {
+    isDraggingRef.current = false;
+    panGrantedRef.current = false;
+    draggingItemRef.current = null;
+    isOverDeleteRef.current = false;
+    setDraggingId(null);
+    setScrollEnabled(true);
+    setIsOverDelete(false);
+    translateX.setValue(0);
+    translateY.setValue(0);
+    cardScale.setValue(1);
+    deleteZoneOpacity.setValue(0);
+  }, [translateX, translateY, cardScale, deleteZoneOpacity]);
+
+  const resetDragRef = useRef(resetDrag);
+  resetDragRef.current = resetDrag;
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => false,
+        onStartShouldSetPanResponderCapture: () => false,
+        onMoveShouldSetPanResponder: () => isDraggingRef.current,
+        onMoveShouldSetPanResponderCapture: () => {
+          if (isDraggingRef.current) {
+            panGrantedRef.current = true;
+            return true;
+          }
+          return false;
+        },
+        onPanResponderGrant: (_evt, gestureState) => {
+          panGrantedRef.current = true;
+          startDx.current = gestureState.dx;
+          startDy.current = gestureState.dy;
+        },
+        onPanResponderMove: (evt, gestureState) => {
+          translateX.setValue(gestureState.dx - startDx.current);
+          translateY.setValue(gestureState.dy - startDy.current);
+
+          const fingerY = evt.nativeEvent.pageY;
+          const relY = fingerY - containerPageY.current;
+          const over = relY < DELETE_ZONE_HEIGHT;
+          if (over !== isOverDeleteRef.current) {
+            isOverDeleteRef.current = over;
+            setIsOverDelete(over);
+          }
+        },
+        onPanResponderRelease: evt => {
+          const fingerY = evt.nativeEvent.pageY;
+          const relY = fingerY - containerPageY.current;
+          const over = relY < DELETE_ZONE_HEIGHT;
+
+          if (over && draggingItemRef.current) {
+            const item = { ...draggingItemRef.current };
+            resetDragRef.current();
+            Alert.alert(
+              'Удалить тему',
+              `Удалить тему «${item.title}»?\nВсе карточки будут удалены.`,
+              [
+                { text: 'Отмена', style: 'cancel' },
+                {
+                  text: 'Удалить',
+                  style: 'destructive',
+                  onPress: async () => {
+                    await deleteThemeRef.current(item.id);
+                    await fetchRef.current();
+                  },
+                },
+              ],
+            );
+          } else {
+            Animated.parallel([
+              Animated.spring(translateX, {
+                toValue: 0,
+                useNativeDriver: true,
+                friction: 6,
+              }),
+              Animated.spring(translateY, {
+                toValue: 0,
+                useNativeDriver: true,
+                friction: 6,
+              }),
+              Animated.spring(cardScale, {
+                toValue: 1,
+                useNativeDriver: true,
+              }),
+              Animated.timing(deleteZoneOpacity, {
+                toValue: 0,
+                duration: 150,
+                useNativeDriver: true,
+              }),
+            ]).start(() => {
+              resetDragRef.current();
+            });
+          }
+        },
+        onPanResponderTerminate: () => {
+          resetDragRef.current();
+        },
+        onShouldBlockNativeResponder: () => true,
+        onPanResponderTerminationRequest: () => false,
+      }),
+    [translateX, translateY, cardScale, deleteZoneOpacity],
+  );
+
+  const handleLongPress = useCallback(
+    (item: Theme) => {
+      isDraggingRef.current = true;
+      panGrantedRef.current = false;
+      draggingItemRef.current = { id: item.id, title: item.title };
+      setDraggingId(item.id);
+      setScrollEnabled(false);
+      translateX.setValue(0);
+      translateY.setValue(0);
+
+      containerRef.current?.measureInWindow((_x, y) => {
+        containerPageY.current = y;
+      });
+
+      Animated.parallel([
+        Animated.timing(deleteZoneOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(cardScale, {
+          toValue: 1.05,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    },
+    [translateX, translateY, deleteZoneOpacity, cardScale],
+  );
+
+  const handlePressOut = useCallback(() => {
+    if (isDraggingRef.current && !panGrantedRef.current) {
+      Animated.timing(deleteZoneOpacity, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }).start(() => resetDrag());
+    }
+  }, [deleteZoneOpacity, resetDrag]);
+
+  const renderItem = useCallback(
+    ({ item }: { item: Theme }) => {
+      const isDraggingThis = draggingId === item.id;
+
+      return (
+        <Animated.View
+          style={
+            isDraggingThis
+              ? {
+                  transform: [
+                    { translateX },
+                    { translateY },
+                    { scale: cardScale },
+                  ],
+                  zIndex: 999,
+                  elevation: 10,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 8,
+                }
+              : undefined
+          }
+        >
+          <ThemeCard
+            color={item.color}
+            icon={item.icon}
+            title={item.title}
+            description={item.description}
+            onPress={() => {
+              if (!isDraggingRef.current) {
+                (navigation as any).navigate('ThemeDetail', { id: item.id });
+              }
+            }}
+            onLongPress={() => handleLongPress(item)}
+            onPressOut={handlePressOut}
+          />
+        </Animated.View>
+      );
+    },
+    [
+      draggingId,
+      translateX,
+      translateY,
+      cardScale,
+      navigation,
+      handleLongPress,
+      handlePressOut,
+    ],
+  );
+
   return (
     <>
       <View
@@ -59,7 +295,46 @@ export function ThemeBoard() {
           <CreateThemeModal closeModal={closeModal} />
         </Modal>
       </Portal>
-      <View style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+
+      <View
+        ref={containerRef}
+        style={{ display: 'flex', flexDirection: 'column', flex: 1 }}
+        {...panResponder.panHandlers}
+      >
+        {/* Delete zone — overlays on top when dragging */}
+        <Animated.View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: DELETE_ZONE_HEIGHT,
+            backgroundColor: isOverDelete ? '#ef4444' : '#fee2e2',
+            borderRadius: 16,
+            justifyContent: 'center',
+            alignItems: 'center',
+            flexDirection: 'row',
+            gap: 8,
+            opacity: deleteZoneOpacity,
+            zIndex: 998,
+          }}
+        >
+          <TrashIcon
+            width={24}
+            height={24}
+            color={isOverDelete ? 'white' : '#ef4444'}
+          />
+          <Text
+            style={{
+              color: isOverDelete ? 'white' : '#ef4444',
+              fontWeight: FontWeights.semibold,
+              ...TextSizes.medium,
+            }}
+          >
+            Перетащите сюда
+          </Text>
+        </Animated.View>
+
         {themes.length === 0 ? (
           <View
             style={{
@@ -100,20 +375,12 @@ export function ThemeBoard() {
           <FlatList
             data={themes}
             style={{ flex: 1 }}
-            contentContainerStyle={styles.wrapper}
+            scrollEnabled={scrollEnabled}
+            contentContainerStyle={todayBoardStyles.wrapper}
             showsVerticalScrollIndicator={false}
             keyExtractor={item => item.id.toString()}
-            renderItem={({ item }) => (
-              <ThemeCard
-                color={item.color}
-                icon={item.icon}
-                title={item.title}
-                description={item.description}
-                onPress={() =>
-                  navigation.navigate('ThemeDetail', { id: item.id })
-                }
-              />
-            )}
+            renderItem={renderItem}
+            extraData={draggingId}
           />
         )}
       </View>

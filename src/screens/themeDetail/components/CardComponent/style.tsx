@@ -62,4 +62,8 @@ export const styles = StyleSheet.create({
           flexGrow: 1,
           justifyContent: 'center',
         },
+        deleteButton: {
+          padding: 8,
+          borderRadius: 8,
+        },
     })

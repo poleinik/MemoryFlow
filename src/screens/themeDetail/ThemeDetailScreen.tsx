@@ -1,9 +1,10 @@
 import { useCallback, useMemo, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors, FontWeights, layout, TextSizes } from 'src/styles';
 import ArrowBackIcon from 'assets/ArrowBackIcon';
+import TrashIcon from 'assets/TrashIcon';
 import { useGetTheme } from '../../hooks/useGetTheme';
 import { Progress } from './components/Progress';
 import { AICreateBtn } from './components/AICreation';
@@ -18,6 +19,8 @@ import ExpandableCard from 'src/components/ExpandableCard';
 import FlipCard from 'src/components/FlipCard';
 import SwipeNavigationView from 'src/components/SwipeNavigationView';
 import { StatusCard } from 'src/model/consts';
+import { useDeleteCard } from 'src/api/useDeleteCard';
+import { useDeleteTheme } from 'src/api/useDeleteTheme';
 export type ThemeStackParamList = {
   ThemeMain: undefined;
   ThemeDetail: { id: string };
@@ -29,6 +32,8 @@ type Props = NativeStackScreenProps<ThemeStackParamList, 'ThemeDetail'>;
 export const ThemeDetailScreen = ({ route, navigation }: Props) => {
   const { id } = route.params;
   const { theme, cards, fetch } = useGetTheme();
+  const { deleteCard } = useDeleteCard();
+  const { deleteTheme } = useDeleteTheme();
   const modalRef = useRef<ModalHandle>(null);
   const openModal = () => modalRef?.current?.openModal();
   const closeModal = () => modalRef?.current?.closeModal();
@@ -70,6 +75,42 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
     });
   };
 
+  const handleDeleteCard = (cardId: string, question: string) => {
+    Alert.alert(
+      'Удалить карточку',
+      `Вы уверены, что хотите удалить карточку «${question}»?`,
+      [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Удалить',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteCard(cardId);
+            await fetch(id);
+          },
+        },
+      ],
+    );
+  };
+
+  const handleDeleteTheme = () => {
+    Alert.alert(
+      'Удалить тему',
+      `Вы уверены, что хотите удалить тему «${theme?.title}»? Все карточки будут удалены.`,
+      [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Удалить',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteTheme(id);
+            navigation.goBack();
+          },
+        },
+      ],
+    );
+  };
+
 
   return (
     <SwipeNavigationView onSwipeRight={handleSwipeBack}>
@@ -80,14 +121,22 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
           showsVerticalScrollIndicator={false}
           stickyHeaderIndices={[3]}
         >
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <TouchableOpacity
             activeOpacity={0.9}
             onPress={() => navigation.goBack()}
+            style={{ flexDirection: 'row', alignItems: 'center' }}
           >
             <ArrowBackIcon color={Colors.textForeground} />
+            <Text>Назад</Text>
           </TouchableOpacity>
-          <Text>Назад</Text>
+          <TouchableScale
+            activeScale={0.85}
+            onPress={handleDeleteTheme}
+            style={{ padding: 8 }}
+          >
+            <TrashIcon width={22} height={22} color={Colors.backgroundAccent4} />
+          </TouchableScale>
         </View>
         <View>
           <Text style={layout.header1}>{theme?.title}</Text>
@@ -177,6 +226,7 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
                         status={cardStatus}
                         nextReviewAt={item.nextReviewAt}
                         onPress={onPress}
+                        onDelete={() => handleDeleteCard(item.id, item.question)}
                       />
                     )}
                     renderExpandedContent={({ cardWidth, cardHeight }) => (
