@@ -297,47 +297,11 @@ export function ThemeBoard() {
           <CreateThemeModal closeModal={closeModal} />
         </Modal>
       </Portal>
-
       <View
         ref={containerRef}
         style={{ display: 'flex', flexDirection: 'column', flex: 1 }}
         {...panResponder.panHandlers}
       >
-        {/* Delete zone — overlays at bottom when dragging */}
-        <Animated.View
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: DELETE_ZONE_HEIGHT,
-            backgroundColor: isOverDelete
-              ? 'rgba(239, 68, 68, 0.85)'
-              : 'rgba(254, 226, 226, 0.75)',
-            borderRadius: 16,
-            justifyContent: 'center',
-            alignItems: 'center',
-            flexDirection: 'row',
-            gap: 8,
-            opacity: deleteZoneOpacity,
-            zIndex: 998,
-          }}
-        >
-          <TrashIcon
-            width={24}
-            height={24}
-            color={isOverDelete ? 'white' : '#ef4444'}
-          />
-          <Text
-            style={{
-              color: isOverDelete ? 'white' : '#ef4444',
-              fontWeight: FontWeights.semibold,
-              ...TextSizes.medium,
-            }}
-          >
-            Перетащите сюда
-          </Text>
-        </Animated.View>
 
         {themes.length === 0 ? (
           <View
@@ -387,6 +351,43 @@ export function ThemeBoard() {
             extraData={draggingId}
           />
         )}
+
+        {/* Delete zone — overlays at bottom when dragging */}
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: DELETE_ZONE_HEIGHT,
+            backgroundColor: isOverDelete
+              ? 'rgba(239, 68, 68, 0.85)'
+              : 'rgba(254, 226, 226, 0.75)',
+            borderRadius: 16,
+            justifyContent: 'center',
+            alignItems: 'center',
+            flexDirection: 'row',
+            gap: 8,
+            opacity: deleteZoneOpacity,
+            zIndex: 1,
+          }}
+        >
+          <TrashIcon
+            width={24}
+            height={24}
+            color={isOverDelete ? 'white' : '#ef4444'}
+          />
+          <Text
+            style={{
+              color: isOverDelete ? 'white' : '#ef4444',
+              fontWeight: FontWeights.semibold,
+              ...TextSizes.medium,
+            }}
+          >
+            Перетащите сюда
+          </Text>
+        </Animated.View>
       </View>
     </>
   );

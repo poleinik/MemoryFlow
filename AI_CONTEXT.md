@@ -49,6 +49,8 @@ src/
 │   ├── useCreateCard.ts        # Создание одной карточки
 │   ├── useCreateCards.ts       # Батч-создание карточек
 │   ├── useCreateTheme.ts       # Создание темы
+│   ├── useDeleteCard.ts        # Каскадное удаление карточки (+ review_log)
+│   ├── useDeleteTheme.ts       # Каскадное удаление темы (+ cards + review_log)
 │   ├── useFetchThemes.ts       # Получение всех тем
 │   ├── useGenerateCardQa.ts    # Генерация Q&A через Ollama API
 │   └── useUpdateCard.ts        # Обновление карточки (данные + SM-2 поля)
@@ -63,7 +65,7 @@ src/
 ├── screens/                    # Экраны приложения
 │   ├── theme/                  # Главный экран — список тем
 │   │   ├── ThemeScreen.tsx
-│   │   └── components/         # TodayBoard, ThemeBoard, ThemeCard, CreateThemeModal, StartRepeatBtn
+│   │   └── components/         # TodayBoard, ThemeBoard (drag-to-delete), ThemeCard, CreateThemeModal, StartRepeatBtn
 │   ├── themeDetail/            # Детальный экран темы — список карточек
 │   │   ├── ThemeDetailScreen.tsx
 │   │   ├── components/         # AICreation, CardComponent, CreateAICardModal, Progress
@@ -91,7 +93,7 @@ src/
 ├── utils/
 │   └── supermemo.ts            # Обёртка над supermemo: маппинг рейтингов → grades
 └── styles.tsx                  # Глобальные стили, типографика, Layout-токены
-assets/                         # SVG-иконки как React-компоненты (react-native-svg)
+assets/                         # SVG-иконки как React-компоненты (react-native-svg, включая TrashIcon)
 ```
 
 ## Схема базы данных (WatermelonDB)
@@ -162,6 +164,13 @@ assets/                         # SVG-иконки как React-компонен
 4. Запись в review_log (с duration_ms)
 5. Обновление Card через SuperMemo (interval, ease_factor, repetitions, next_review_at)
 6. Перепланирование уведомлений
+
+### Удаление
+
+- **Тема**: drag-to-delete в ThemeBoard (longPress → перетаскивание в зону удаления внизу → Alert-подтверждение). Также кнопка-корзина в хедере ThemeDetailScreen.
+- **Карточка**: кнопка-корзина на каждой карточке в ThemeDetailScreen → Alert-подтверждение.
+- Каскадное удаление: тема → все cards → все review_log записи. Карточка → все review_log записи.
+- Хуки: `useDeleteTheme`, `useDeleteCard` — batch `prepareDestroyPermanently()` внутри `database.write()`.
 
 ### AI-генерация карточек (Ollama)
 
