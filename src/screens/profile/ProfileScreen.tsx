@@ -56,15 +56,12 @@ const useUser = () => {
   return { user, updateUser };
 };
 
-const pad = (n: number) => String(n).padStart(2, '0');
 
 export function ProfileScreen() {
   const { onSwipeLeft, onSwipeRight } = useTabSwipe('Profile');
   const { user, updateUser } = useUser();
 
   const [name, setName] = useState('');
-  const [hour, setHour] = useState(9);
-  const [minute, setMinute] = useState(0);
   const [aiModels, setAiModels] = useState<AiModelConfig[]>([]);
 
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
@@ -75,8 +72,6 @@ export function ProfileScreen() {
   useEffect(() => {
     if (!user) return;
     setName(user.name || '');
-    setHour(user.notificationHour ?? 9);
-    setMinute(user.notificationMinute ?? 0);
     setAiModels(user.aiModels);
     setAvatarUri(user.avatarUri);
   }, [user]);
@@ -100,28 +95,6 @@ export function ProfileScreen() {
       u.name = name.trim();
     });
   }, [name, updateUser]);
-
-  const handleChangeHour = useCallback(
-    async (delta: number) => {
-      const next = (hour + delta + 24) % 24;
-      setHour(next);
-      await updateUser(u => {
-        u.notificationHour = next;
-      });
-    },
-    [hour, updateUser],
-  );
-
-  const handleChangeMinute = useCallback(
-    async (delta: number) => {
-      const next = (minute + delta + 60) % 60;
-      setMinute(next);
-      await updateUser(u => {
-        u.notificationMinute = next;
-      });
-    },
-    [minute, updateUser],
-  );
 
   const handleAddModel = useCallback(async () => {
     const trimmedName = newModelName.trim();
@@ -192,43 +165,6 @@ export function ProfileScreen() {
               returnKeyType="done"
               onSubmitEditing={handleSaveName}
             />
-          </View>
-        </View>
-
-        {/* Notification time */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Время уведомлений</Text>
-          <Text style={styles.sectionHint}>
-            Ежедневное напоминание о повторении карточек
-          </Text>
-          <View style={styles.timeRow}>
-            <View style={styles.timeBlock}>
-              <TouchableOpacity
-                style={styles.timeButton}
-                onPress={() => handleChangeHour(1)}>
-                <Text style={styles.timeButtonText}>▲</Text>
-              </TouchableOpacity>
-              <Text style={styles.timeValue}>{pad(hour)}</Text>
-              <TouchableOpacity
-                style={styles.timeButton}
-                onPress={() => handleChangeHour(-1)}>
-                <Text style={styles.timeButtonText}>▼</Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.timeSeparator}>:</Text>
-            <View style={styles.timeBlock}>
-              <TouchableOpacity
-                style={styles.timeButton}
-                onPress={() => handleChangeMinute(5)}>
-                <Text style={styles.timeButtonText}>▲</Text>
-              </TouchableOpacity>
-              <Text style={styles.timeValue}>{pad(minute)}</Text>
-              <TouchableOpacity
-                style={styles.timeButton}
-                onPress={() => handleChangeMinute(-5)}>
-                <Text style={styles.timeButtonText}>▼</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </View>
 
@@ -357,43 +293,6 @@ const styles = StyleSheet.create({
     ...TextSizes.medium,
     fontWeight: FontWeights.medium,
     color: Colors.textPrimary,
-  },
-  timeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 8,
-  },
-  timeBlock: {
-    alignItems: 'center',
-    gap: 4,
-  },
-  timeButton: {
-    width: 44,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: Colors.backgroundPrimary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  timeButtonText: {
-    ...TextSizes.small,
-    color: Colors.primary,
-    fontWeight: FontWeights.bold,
-  },
-  timeValue: {
-    ...TextSizes.xxlarge,
-    fontWeight: FontWeights.bold,
-    color: Colors.textPrimary,
-    minWidth: 48,
-    textAlign: 'center',
-  },
-  timeSeparator: {
-    ...TextSizes.xxlarge,
-    fontWeight: FontWeights.bold,
-    color: Colors.textPrimary,
-    marginHorizontal: 4,
   },
   modelCard: {
     flexDirection: 'row',
