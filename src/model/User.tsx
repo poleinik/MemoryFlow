@@ -4,6 +4,7 @@ import { date, field, text } from '@nozbe/watermelondb/decorators';
 export type AiModelConfig = {
   name: string;
   token: string;
+  enabled?: boolean;
 };
 
 export default class User extends Model {

@@ -96,6 +96,16 @@ export function ProfileScreen() {
     });
   }, [name, updateUser]);
 
+  const saveModels = useCallback(
+    async (updated: AiModelConfig[]) => {
+      setAiModels(updated);
+      await updateUser(u => {
+        u.aiConfigRaw = JSON.stringify(updated);
+      });
+    },
+    [updateUser],
+  );
+
   const handleAddModel = useCallback(async () => {
     const trimmedName = newModelName.trim();
     const trimmedToken = newModelToken.trim();
@@ -103,25 +113,38 @@ export function ProfileScreen() {
       Alert.alert('Ошибка', 'Укажите название модели');
       return;
     }
-    const updated = [...aiModels, { name: trimmedName, token: trimmedToken }];
-    setAiModels(updated);
-    await updateUser(u => {
-      u.aiConfigRaw = JSON.stringify(updated);
-    });
+    await saveModels([...aiModels, { name: trimmedName, token: trimmedToken, enabled: true }]);
     setNewModelName('');
     setNewModelToken('');
     modalRef.current?.closeModal();
-  }, [newModelName, newModelToken, aiModels, updateUser]);
+  }, [newModelName, newModelToken, aiModels, saveModels]);
 
   const handleRemoveModel = useCallback(
     async (index: number) => {
-      const updated = aiModels.filter((_, i) => i !== index);
-      setAiModels(updated);
-      await updateUser(u => {
-        u.aiConfigRaw = JSON.stringify(updated);
-      });
+      await saveModels(aiModels.filter((_, i) => i !== index));
     },
-    [aiModels, updateUser],
+    [aiModels, saveModels],
+  );
+
+  const handleToggleModel = useCallback(
+    async (index: number) => {
+      const updated = aiModels.map((m, i) =>
+        i === index ? { ...m, enabled: !(m.enabled ?? true) } : m,
+      );
+      await saveModels(updated);
+    },
+    [aiModels, saveModels],
+  );
+
+  const handleMoveModel = useCallback(
+    async (index: number, direction: -1 | 1) => {
+      const target = index + direction;
+      if (target < 0 || target >= aiModels.length) return;
+      const updated = [...aiModels];
+      [updated[index], updated[target]] = [updated[target], updated[index]];
+      await saveModels(updated);
+    },
+    [aiModels, saveModels],
   );
 
   const initials = name.trim()
@@ -179,23 +202,73 @@ export function ProfileScreen() {
             <Text style={styles.emptyText}>Нет добавленных моделей</Text>
           )}
 
-          {aiModels.map((model, index) => (
-            <View key={index} style={styles.modelCard}>
-              <View style={styles.modelInfo}>
-                <Text style={styles.modelName}>{model.name}</Text>
-                <Text style={styles.modelToken} numberOfLines={1}>
-                  {model.token
-                    ? '••••' + model.token.slice(-6)
-                    : 'Без токена'}
-                </Text>
+          {aiModels.map((model, index) => {
+            const isEnabled = model.enabled ?? true;
+            return (
+              <View
+                key={index}
+                style={[
+                  styles.modelCard,
+                  !isEnabled && styles.modelCardDisabled,
+                ]}>
+                <TouchableOpacity
+                  style={styles.toggleButton}
+                  onPress={() => handleToggleModel(index)}>
+                  <View
+                    style={[
+                      styles.toggleOuter,
+                      isEnabled && styles.toggleOuterActive,
+                    ]}>
+                    {isEnabled && <View style={styles.toggleInner} />}
+                  </View>
+                </TouchableOpacity>
+                <View style={styles.modelInfo}>
+                  <Text
+                    style={[
+                      styles.modelName,
+                      !isEnabled && styles.modelNameDisabled,
+                    ]}>
+                    {model.name}
+                  </Text>
+                  <Text style={styles.modelToken} numberOfLines={1}>
+                    {model.token
+                      ? '••••' + model.token.slice(-6)
+                      : 'Без токена'}
+                  </Text>
+                </View>
+                <View style={styles.reorderButtons}>
+                  <TouchableOpacity
+                    style={[
+                      styles.reorderButton,
+                      index === 0 && styles.reorderButtonHidden,
+                    ]}
+                    onPress={() => handleMoveModel(index, -1)}
+                    disabled={index === 0}>
+                    <Text style={styles.reorderButtonText}>▲</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.reorderButton,
+                      index === aiModels.length - 1 &&
+                        styles.reorderButtonHidden,
+                    ]}
+                    onPress={() => handleMoveModel(index, 1)}
+                    disabled={index === aiModels.length - 1}>
+                    <Text style={styles.reorderButtonText}>▼</Text>
+                  </TouchableOpacity>
+                </View>
+                <TouchableOpacity
+                  style={styles.removeButton}
+                  onPress={() => handleRemoveModel(index)}>
+                  <XIcon
+                    width={16}
+                    height={16}
+                    color={Colors.backgroundAccent4}
+                  />
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity
-                style={styles.removeButton}
-                onPress={() => handleRemoveModel(index)}>
-                <XIcon width={16} height={16} color={Colors.backgroundAccent4} />
-              </TouchableOpacity>
-            </View>
-          ))}
+            );
+          })}
 
           <TouchableOpacity
             style={styles.addButton}
@@ -301,6 +374,31 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 12,
   },
+  modelCardDisabled: {
+    opacity: 0.5,
+  },
+  toggleButton: {
+    padding: 4,
+    marginRight: 8,
+  },
+  toggleOuter: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: Colors.textTertiary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  toggleOuterActive: {
+    borderColor: Colors.primary,
+  },
+  toggleInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: Colors.primary,
+  },
   modelInfo: {
     flex: 1,
     gap: 2,
@@ -310,7 +408,26 @@ const styles = StyleSheet.create({
     fontWeight: FontWeights.semibold,
     color: Colors.textPrimary,
   },
+  modelNameDisabled: {
+    color: Colors.textTertiary,
+  },
   modelToken: {
+    ...TextSizes.small,
+    color: Colors.textTertiary,
+  },
+  reorderButtons: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 2,
+    marginRight: 4,
+  },
+  reorderButton: {
+    padding: 2,
+  },
+  reorderButtonHidden: {
+    opacity: 0,
+  },
+  reorderButtonText: {
     ...TextSizes.small,
     color: Colors.textTertiary,
   },

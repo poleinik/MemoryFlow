@@ -94,10 +94,12 @@ export const useGenerateCardQa = () => {
       try {
         const users = await database.get<User>('user').query().fetch();
         if (users.length > 0) {
-          userModels = users[0].aiModels.map(m => ({
-            name: m.name,
-            token: m.token || undefined,
-          }));
+          userModels = users[0].aiModels
+            .filter(m => m.enabled !== false)
+            .map(m => ({
+              name: m.name,
+              token: m.token || undefined,
+            }));
         }
       } catch {
         // ignore DB errors, fall back to defaults
