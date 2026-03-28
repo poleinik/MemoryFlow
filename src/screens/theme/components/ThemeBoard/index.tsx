@@ -53,6 +53,7 @@ export function ThemeBoard() {
 
   const containerRef = useRef<View>(null);
   const containerPageY = useRef(0);
+  const containerHeight = useRef(0);
   const startDx = useRef(0);
   const startDy = useRef(0);
 
@@ -103,7 +104,7 @@ export function ThemeBoard() {
 
           const fingerY = evt.nativeEvent.pageY;
           const relY = fingerY - containerPageY.current;
-          const over = relY < DELETE_ZONE_HEIGHT;
+          const over = relY > containerHeight.current - DELETE_ZONE_HEIGHT;
           if (over !== isOverDeleteRef.current) {
             isOverDeleteRef.current = over;
             setIsOverDelete(over);
@@ -112,7 +113,7 @@ export function ThemeBoard() {
         onPanResponderRelease: evt => {
           const fingerY = evt.nativeEvent.pageY;
           const relY = fingerY - containerPageY.current;
-          const over = relY < DELETE_ZONE_HEIGHT;
+          const over = relY > containerHeight.current - DELETE_ZONE_HEIGHT;
 
           if (over && draggingItemRef.current) {
             const item = { ...draggingItemRef.current };
@@ -177,8 +178,9 @@ export function ThemeBoard() {
       translateX.setValue(0);
       translateY.setValue(0);
 
-      containerRef.current?.measureInWindow((_x, y) => {
+      containerRef.current?.measureInWindow((_x, y, _w, h) => {
         containerPageY.current = y;
+        containerHeight.current = h;
       });
 
       Animated.parallel([
@@ -301,15 +303,17 @@ export function ThemeBoard() {
         style={{ display: 'flex', flexDirection: 'column', flex: 1 }}
         {...panResponder.panHandlers}
       >
-        {/* Delete zone — overlays on top when dragging */}
+        {/* Delete zone — overlays at bottom when dragging */}
         <Animated.View
           style={{
             position: 'absolute',
-            top: 0,
+            bottom: 0,
             left: 0,
             right: 0,
             height: DELETE_ZONE_HEIGHT,
-            backgroundColor: isOverDelete ? '#ef4444' : '#fee2e2',
+            backgroundColor: isOverDelete
+              ? 'rgba(239, 68, 68, 0.85)'
+              : 'rgba(254, 226, 226, 0.75)',
             borderRadius: 16,
             justifyContent: 'center',
             alignItems: 'center',
