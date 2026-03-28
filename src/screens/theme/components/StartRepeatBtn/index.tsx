@@ -6,7 +6,20 @@ import styles from './styles';
 import LinearGradient from 'react-native-linear-gradient';
 import ChevronRightIcon from 'assets/ChevronRightIcon';
 import TouchableScale from 'src/components/TouchableScale';
-export function StartButton() {
+import { pluralizeReviewCards } from 'src/utils/todayGreeting';
+
+type StartButtonProps = {
+  pendingReviewCount: number;
+  isLoading?: boolean;
+};
+
+export function StartButton({ pendingReviewCount, isLoading = false }: StartButtonProps) {
+  const subtitle = isLoading
+    ? 'Собираю план на сегодня'
+    : pendingReviewCount > 0
+      ? `${pendingReviewCount} ${pluralizeReviewCards(pendingReviewCount)} ждут`
+      : 'Все карточки на сегодня закрыты';
+
   return (
     <TouchableScale activeScale={0.95}>
       <LinearGradient
@@ -31,7 +44,7 @@ export function StartButton() {
                 Начать повторение
               </Text>
               <Text style={{ ...TextSizes.small, color: Colors.textSecondary }}>
-                {`${24} карточки ждут`}
+                {subtitle}
               </Text>
             </View>
           </View>
