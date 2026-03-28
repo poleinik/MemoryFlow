@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
-import BrainSparklesIcon from 'assets/BrainSparklesIcon';
+import RobotIcon from 'assets/RobotIcon';
 import { useGenerateTodayGreeting } from 'src/api/useGenerateTodayGreeting';
-import { Colors, FontWeights, TextSizes } from 'src/styles';
+import { Colors } from 'src/styles';
 import { getTodayGreetingFallback } from 'src/utils/todayGreeting';
 import styles from './styles';
 
@@ -32,28 +32,22 @@ export function TodayBoard({
 
   return (
     <View style={styles.wrapper}>
-      <Text
-        style={{
-          ...styles.text,
-          color: Colors.textPrimary,
-          fontWeight: FontWeights.bold,
-          ...TextSizes.small,
-        }}
-      >
-        Сегодня
-      </Text>
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <View style={styles.iconWrapper}>
-            <BrainSparklesIcon width={28} height={28} />
+      <Text style={styles.sectionLabel}>Сегодня</Text>
+      <View style={styles.bubbleContainer}>
+        <View style={styles.bubble}>
+          <View style={styles.avatarRing}>
+            <RobotIcon width={32} height={32} />
           </View>
-          <View style={styles.cardHeaderText}>
-            <Text style={styles.cardEyebrow}>AI-ПЛАН НА СЕГОДНЯ</Text>
-            <Text style={styles.cardTitle}>MemoryFlow Assistant</Text>
+          <View style={styles.bubbleContent}>
+            <View style={styles.bubbleHeader}>
+              <Text style={styles.bubbleTitle}>MemoryFlow Assistant</Text>
+              {(isLoading || isFetching) ? <ActivityIndicator color={Colors.primary} size="small" /> : null}
+            </View>
+            <Text style={styles.bubbleMessage}>{message}</Text>
           </View>
-          {(isLoading || isFetching) ? <ActivityIndicator color={Colors.primary} /> : null}
         </View>
-        <Text style={styles.cardMessage}>{message}</Text>
+        <View style={styles.bubbleTailOuter} />
+        <View style={styles.bubbleTail} />
       </View>
     </View>
   );
