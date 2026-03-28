@@ -3,6 +3,14 @@ export type TodayGreetingInput = {
   userName: string | null;
 };
 
+export const getTodayGreetingCacheKey = ({
+  pendingReviewCount,
+  userName,
+}: TodayGreetingInput) => {
+  const normalizedName = userName?.trim() || '';
+  return `${normalizedName}::${pendingReviewCount}`;
+};
+
 export const pluralizeReviewCards = (count: number) => {
   const mod10 = count % 10;
   const mod100 = count % 100;

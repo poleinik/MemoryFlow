@@ -5,6 +5,7 @@ import User from 'src/model/User';
 import {
   buildTodayGreetingPrompt,
   getTodayGreetingFallback,
+  getTodayGreetingCacheKey,
   sanitizeTodayGreeting,
   type TodayGreetingInput,
 } from 'src/utils/todayGreeting';
@@ -24,6 +25,7 @@ type OllamaGenerateResponse = {
 
 const OLLAMA_BASE_URL = 'https://ollama.com';
 const DEFAULT_MODELS = ['qwen3.5:397b-cloud', 'deepseek-v3.1:671b-cloud'];
+const todayGreetingCache = new Map<string, string>();
 
 const isModelUnavailableError = (errorMessage: string) => {
   const normalized = errorMessage.toLowerCase();
@@ -66,6 +68,17 @@ export const useGenerateTodayGreeting = () => {
   const [isError, setIsError] = useState(false);
 
   const generateGreeting = useCallback(async (input: TodayGreetingInput) => {
+    const cacheKey = getTodayGreetingCacheKey(input);
+    const cachedGreeting = todayGreetingCache.get(cacheKey);
+
+    if (cachedGreeting) {
+      setData(cachedGreeting);
+      setIsError(false);
+      setIsFetching(false);
+      return cachedGreeting;
+    }
+
+    setData(undefined);
     setIsFetching(true);
     setIsError(false);
 
@@ -107,6 +120,7 @@ export const useGenerateTodayGreeting = () => {
           continue;
         }
 
+        todayGreetingCache.set(cacheKey, sanitized);
         setData(sanitized);
         setIsError(false);
         setIsFetching(false);
@@ -118,6 +132,7 @@ export const useGenerateTodayGreeting = () => {
 
     setIsError(true);
     const fallback = getTodayGreetingFallback(input);
+    todayGreetingCache.set(cacheKey, fallback);
     setData(fallback);
     setIsFetching(false);
     return fallback;

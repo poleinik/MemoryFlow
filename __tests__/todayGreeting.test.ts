@@ -1,5 +1,6 @@
 import {
   getTodayGreetingFallback,
+  getTodayGreetingCacheKey,
   pluralizeReviewCards,
 } from 'src/utils/todayGreeting';
 
@@ -30,5 +31,23 @@ describe('todayGreeting helpers', () => {
 
     expect(message).toContain('карточек больше не осталось');
     expect(message).toContain('Отличная работа');
+  });
+
+  test('changes cache key when review count changes', () => {
+    const firstKey = getTodayGreetingCacheKey({
+      pendingReviewCount: 30,
+      userName: 'Анна',
+    });
+    const secondKey = getTodayGreetingCacheKey({
+      pendingReviewCount: 25,
+      userName: 'Анна',
+    });
+    const sameCountKey = getTodayGreetingCacheKey({
+      pendingReviewCount: 30,
+      userName: 'Анна',
+    });
+
+    expect(firstKey).not.toBe(secondKey);
+    expect(firstKey).toBe(sameCountKey);
   });
 });
