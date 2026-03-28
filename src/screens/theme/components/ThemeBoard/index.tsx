@@ -1,7 +1,6 @@
 import {
   View,
   Text,
-  FlatList,
   Alert,
   Animated,
   PanResponder,
@@ -24,7 +23,11 @@ import type Theme from 'src/model/Themes';
 
 const DELETE_ZONE_HEIGHT = 72;
 
-export function ThemeBoard() {
+type ThemeBoardProps = {
+  onScrollEnabledChange?: (isEnabled: boolean) => void;
+};
+
+export function ThemeBoard({ onScrollEnabledChange }: ThemeBoardProps) {
   const navigation = useNavigation();
   const { themes, fetch } = useGetThemes();
   const { deleteTheme } = useDeleteTheme();
@@ -42,7 +45,6 @@ export function ThemeBoard() {
   const panGrantedRef = useRef(false);
   const draggingItemRef = useRef<{ id: string; title: string } | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
-  const [scrollEnabled, setScrollEnabled] = useState(true);
   const isOverDeleteRef = useRef(false);
   const [isOverDelete, setIsOverDelete] = useState(false);
 
@@ -63,19 +65,26 @@ export function ThemeBoard() {
   const fetchRef = useRef(fetch);
   fetchRef.current = fetch;
 
+  const updateScrollEnabled = useCallback(
+    (isEnabled: boolean) => {
+      onScrollEnabledChange?.(isEnabled);
+    },
+    [onScrollEnabledChange],
+  );
+
   const resetDrag = useCallback(() => {
     isDraggingRef.current = false;
     panGrantedRef.current = false;
     draggingItemRef.current = null;
     isOverDeleteRef.current = false;
     setDraggingId(null);
-    setScrollEnabled(true);
+    updateScrollEnabled(true);
     setIsOverDelete(false);
     translateX.setValue(0);
     translateY.setValue(0);
     cardScale.setValue(1);
     deleteZoneOpacity.setValue(0);
-  }, [translateX, translateY, cardScale, deleteZoneOpacity]);
+  }, [translateX, translateY, cardScale, deleteZoneOpacity, updateScrollEnabled]);
 
   const resetDragRef = useRef(resetDrag);
   resetDragRef.current = resetDrag;
@@ -174,7 +183,7 @@ export function ThemeBoard() {
       panGrantedRef.current = false;
       draggingItemRef.current = { id: item.id, title: item.title };
       setDraggingId(item.id);
-      setScrollEnabled(false);
+      updateScrollEnabled(false);
       translateX.setValue(0);
       translateY.setValue(0);
 
@@ -195,7 +204,7 @@ export function ThemeBoard() {
         }),
       ]).start();
     },
-    [translateX, translateY, deleteZoneOpacity, cardScale],
+    [translateX, translateY, deleteZoneOpacity, cardScale, updateScrollEnabled],
   );
 
   const handlePressOut = useCallback(() => {
@@ -341,9 +350,9 @@ export function ThemeBoard() {
         {themes.length === 0 ? (
           <View
             style={{
-              flex: 1,
               justifyContent: 'center',
               alignItems: 'center',
+              paddingVertical: 48,
             }}
           >
             <EmptyThemesIcon
@@ -375,16 +384,11 @@ export function ThemeBoard() {
             </Text>
           </View>
         ) : (
-          <FlatList
-            data={themes}
-            style={{ flex: 1 }}
-            scrollEnabled={scrollEnabled}
-            contentContainerStyle={todayBoardStyles.wrapper}
-            showsVerticalScrollIndicator={false}
-            keyExtractor={item => item.id.toString()}
-            renderItem={renderItem}
-            extraData={draggingId}
-          />
+          <View style={todayBoardStyles.wrapper}>
+            {themes.map(item => (
+              <View key={item.id}>{renderItem({ item })}</View>
+            ))}
+          </View>
         )}
       </View>
     </>
