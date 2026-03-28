@@ -1,5 +1,7 @@
 import { useCallback, useState } from 'react';
 import { OLLAMA_CONFIG } from 'src/config/ollama.local';
+import { database } from 'src/model';
+import User from 'src/model/User';
 
 type CardQaItem = {
   question: string;
@@ -8,9 +10,13 @@ type CardQaItem = {
 
 type GenerateCardQaData = CardQaItem[] | string;
 
+type ModelEntry = {
+  name: string;
+  token?: string;
+};
+
 type GenerateCardQaArgs = {
   text: string;
-  models?: string[];
 };
 
 type OllamaGenerateResponse = {
@@ -22,7 +28,7 @@ type OllamaGenerateResponse = {
 };
 
 const OLLAMA_BASE_URL = 'https://ollama.com';
-const DEFAULT_MODELS = ['deepseek-r1:7b', 'deepseek-v3.1:671b-cloud'];
+const DEFAULT_MODELS = ['qwen3.5:397b-cloud', 'deepseek-v3.1:671b-cloud'];
 
 const buildPrompt = (text: string) => {
   return `Представь, что ты студент, который готовится к экзамену. У тебя есть конспект. Выдели из него ключевые тезисы.
@@ -68,7 +74,7 @@ export const useGenerateCardQa = () => {
   const [data, setData] = useState<GenerateCardQaData | undefined>(undefined);
 
   const generateCardQa = useCallback(
-    async ({ text, models = DEFAULT_MODELS }: GenerateCardQaArgs) => {
+    async ({ text }: GenerateCardQaArgs) => {
       setIsFetching(true);
       setIsError(false);
       setIsSuccess(false);
@@ -83,16 +89,36 @@ export const useGenerateCardQa = () => {
         return;
       }
 
+      // Load user-saved models from DB
+      let userModels: ModelEntry[] = [];
+      try {
+        const users = await database.get<User>('user').query().fetch();
+        if (users.length > 0) {
+          userModels = users[0].aiModels.map(m => ({
+            name: m.name,
+            token: m.token || undefined,
+          }));
+        }
+      } catch {
+        // ignore DB errors, fall back to defaults
+      }
+
+      const defaultModels: ModelEntry[] = DEFAULT_MODELS.map(name => ({ name }));
+      const models: ModelEntry[] = userModels.length > 0
+        ? [...userModels, ...defaultModels]
+        : defaultModels;
+
       let lastError: unknown;
 
-      for (const model of models) {
+      for (const { name: model, token } of models) {
         try {
+          const authToken = token || OLLAMA_CONFIG.apiKey;
           const response = await fetch(endpoint, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              ...(OLLAMA_CONFIG.apiKey
-                ? { Authorization: `Bearer ${OLLAMA_CONFIG.apiKey}` }
+              ...(authToken
+                ? { Authorization: `Bearer ${authToken}` }
                 : {}),
             },
             body: JSON.stringify({
