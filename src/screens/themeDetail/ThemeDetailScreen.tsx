@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Animated, PanResponder } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors, FontWeights, layout, TextSizes } from 'src/styles';
@@ -29,6 +29,8 @@ export type ThemeStackParamList = {
 
 type Props = NativeStackScreenProps<ThemeStackParamList, 'ThemeDetail'>;
 
+const DELETE_ZONE_HEIGHT = 72;
+
 export const ThemeDetailScreen = ({ route, navigation }: Props) => {
   const { id } = route.params;
   const { theme, cards, fetch } = useGetTheme();
@@ -43,6 +45,178 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
       fetch(id);
     }, [fetch, id]),
   );
+
+  // ── Drag-to-delete state ──
+  const isDraggingRef = useRef(false);
+  const panGrantedRef = useRef(false);
+  const draggingItemRef = useRef<{ id: string; question: string } | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [scrollEnabled, setScrollEnabled] = useState(true);
+  const isOverDeleteRef = useRef(false);
+  const [isOverDelete, setIsOverDelete] = useState(false);
+
+  const translateX = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(0)).current;
+  const deleteZoneOpacity = useRef(new Animated.Value(0)).current;
+  const cardScale = useRef(new Animated.Value(1)).current;
+
+  const containerRef = useRef<View>(null);
+  const containerPageY = useRef(0);
+  const containerHeight = useRef(0);
+  const startDx = useRef(0);
+  const startDy = useRef(0);
+
+  const deleteCardRef = useRef(deleteCard);
+  deleteCardRef.current = deleteCard;
+  const fetchRef = useRef(fetch);
+  fetchRef.current = fetch;
+  const idRef = useRef(id);
+  idRef.current = id;
+
+  const resetDrag = useCallback(() => {
+    isDraggingRef.current = false;
+    panGrantedRef.current = false;
+    draggingItemRef.current = null;
+    isOverDeleteRef.current = false;
+    setDraggingId(null);
+    setScrollEnabled(true);
+    setIsOverDelete(false);
+    translateX.setValue(0);
+    translateY.setValue(0);
+    cardScale.setValue(1);
+    deleteZoneOpacity.setValue(0);
+  }, [translateX, translateY, cardScale, deleteZoneOpacity]);
+
+  const resetDragRef = useRef(resetDrag);
+  resetDragRef.current = resetDrag;
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => false,
+        onStartShouldSetPanResponderCapture: () => false,
+        onMoveShouldSetPanResponder: () => isDraggingRef.current,
+        onMoveShouldSetPanResponderCapture: () => {
+          if (isDraggingRef.current) {
+            panGrantedRef.current = true;
+            return true;
+          }
+          return false;
+        },
+        onPanResponderGrant: (_evt, gestureState) => {
+          panGrantedRef.current = true;
+          startDx.current = gestureState.dx;
+          startDy.current = gestureState.dy;
+        },
+        onPanResponderMove: (evt, gestureState) => {
+          translateX.setValue(gestureState.dx - startDx.current);
+          translateY.setValue(gestureState.dy - startDy.current);
+
+          const fingerY = evt.nativeEvent.pageY;
+          const relY = fingerY - containerPageY.current;
+          const over = relY > containerHeight.current - DELETE_ZONE_HEIGHT;
+          if (over !== isOverDeleteRef.current) {
+            isOverDeleteRef.current = over;
+            setIsOverDelete(over);
+          }
+        },
+        onPanResponderRelease: evt => {
+          const fingerY = evt.nativeEvent.pageY;
+          const relY = fingerY - containerPageY.current;
+          const over = relY > containerHeight.current - DELETE_ZONE_HEIGHT;
+
+          if (over && draggingItemRef.current) {
+            const item = { ...draggingItemRef.current };
+            resetDragRef.current();
+            Alert.alert(
+              'Удалить карточку',
+              `Удалить карточку «${item.question}»?`,
+              [
+                { text: 'Отмена', style: 'cancel' },
+                {
+                  text: 'Удалить',
+                  style: 'destructive',
+                  onPress: async () => {
+                    await deleteCardRef.current(item.id);
+                    await fetchRef.current(idRef.current);
+                  },
+                },
+              ],
+            );
+          } else {
+            Animated.parallel([
+              Animated.spring(translateX, {
+                toValue: 0,
+                useNativeDriver: true,
+                friction: 6,
+              }),
+              Animated.spring(translateY, {
+                toValue: 0,
+                useNativeDriver: true,
+                friction: 6,
+              }),
+              Animated.spring(cardScale, {
+                toValue: 1,
+                useNativeDriver: true,
+              }),
+              Animated.timing(deleteZoneOpacity, {
+                toValue: 0,
+                duration: 150,
+                useNativeDriver: true,
+              }),
+            ]).start(() => {
+              resetDragRef.current();
+            });
+          }
+        },
+        onPanResponderTerminate: () => {
+          resetDragRef.current();
+        },
+        onShouldBlockNativeResponder: () => true,
+        onPanResponderTerminationRequest: () => false,
+      }),
+    [translateX, translateY, cardScale, deleteZoneOpacity],
+  );
+
+  const handleCardLongPress = useCallback(
+    (cardItem: { id: string; question: string }) => {
+      isDraggingRef.current = true;
+      panGrantedRef.current = false;
+      draggingItemRef.current = { id: cardItem.id, question: cardItem.question };
+      setDraggingId(cardItem.id);
+      setScrollEnabled(false);
+      translateX.setValue(0);
+      translateY.setValue(0);
+
+      containerRef.current?.measureInWindow((_x, y, _w, h) => {
+        containerPageY.current = y;
+        containerHeight.current = h;
+      });
+
+      Animated.parallel([
+        Animated.timing(deleteZoneOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(cardScale, {
+          toValue: 1.05,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    },
+    [translateX, translateY, deleteZoneOpacity, cardScale],
+  );
+
+  const handleCardPressOut = useCallback(() => {
+    if (isDraggingRef.current && !panGrantedRef.current) {
+      Animated.timing(deleteZoneOpacity, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }).start(() => resetDrag());
+    }
+  }, [deleteZoneOpacity, resetDrag]);
 
 
   const totalCards = cards?.length ?? 0;
@@ -75,24 +249,6 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
     });
   };
 
-  const handleDeleteCard = (cardId: string, question: string) => {
-    Alert.alert(
-      'Удалить карточку',
-      `Вы уверены, что хотите удалить карточку «${question}»?`,
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Удалить',
-          style: 'destructive',
-          onPress: async () => {
-            await deleteCard(cardId);
-            await fetch(id);
-          },
-        },
-      ],
-    );
-  };
-
   const handleDeleteTheme = () => {
     Alert.alert(
       'Удалить тему',
@@ -114,12 +270,17 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
 
   return (
     <SwipeNavigationView onSwipeRight={handleSwipeBack}>
-      <View style={layout.container}>
+      <View
+        ref={containerRef}
+        style={layout.container}
+        {...panResponder.panHandlers}
+      >
         <ScrollView
           style={{ flex: 1, margin: -16 }}
           contentContainerStyle={{ padding: 16, gap: 24 }}
           showsVerticalScrollIndicator={false}
           stickyHeaderIndices={[3]}
+          scrollEnabled={scrollEnabled}
         >
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <TouchableOpacity
@@ -214,10 +375,30 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
               (cards ?? []).map(item => {
                 const cardStatus =
                   item.status as (typeof StatusCard)[keyof typeof StatusCard];
+                const isDraggingThis = draggingId === item.id;
 
                 return (
-                  <ExpandableCard
+                  <Animated.View
                     key={String(item.id)}
+                    style={
+                      isDraggingThis
+                        ? {
+                            transform: [
+                              { translateX },
+                              { translateY },
+                              { scale: cardScale },
+                            ],
+                            zIndex: 999,
+                            elevation: 10,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.3,
+                            shadowRadius: 8,
+                          }
+                        : undefined
+                    }
+                  >
+                  <ExpandableCard
                     renderPreview={({ onPress }) => (
                       <CardComponent
                         id={String(item.id)}
@@ -225,8 +406,13 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
                         answer={item.answer}
                         status={cardStatus}
                         nextReviewAt={item.nextReviewAt}
-                        onPress={onPress}
-                        onDelete={() => handleDeleteCard(item.id, item.question)}
+                        onPress={() => {
+                          if (!isDraggingRef.current) {
+                            onPress();
+                          }
+                        }}
+                        onLongPress={() => handleCardLongPress({ id: item.id, question: item.question })}
+                        onPressOut={handleCardPressOut}
                       />
                     )}
                     renderExpandedContent={({ cardWidth, cardHeight }) => (
@@ -257,12 +443,49 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
                       />
                     )}
                   />
+                  </Animated.View>
                 );
               })
             )}
           </View>
         </View>
         </ScrollView>
+
+        {/* Delete zone — overlays at bottom when dragging */}
+        <Animated.View
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: DELETE_ZONE_HEIGHT,
+            backgroundColor: isOverDelete
+              ? 'rgba(239, 68, 68, 0.85)'
+              : 'rgba(254, 226, 226, 0.75)',
+            borderRadius: 16,
+            justifyContent: 'center',
+            alignItems: 'center',
+            flexDirection: 'row',
+            gap: 8,
+            opacity: deleteZoneOpacity,
+            zIndex: 998,
+          }}
+        >
+          <TrashIcon
+            width={24}
+            height={24}
+            color={isOverDelete ? 'white' : '#ef4444'}
+          />
+          <Text
+            style={{
+              color: isOverDelete ? 'white' : '#ef4444',
+              fontWeight: FontWeights.semibold,
+              ...TextSizes.medium,
+            }}
+          >
+            Перетащите сюда
+          </Text>
+        </Animated.View>
 
         {/* Плавающая кнопка для генерации карточек с ИИ */}
        <AICreateBtn />

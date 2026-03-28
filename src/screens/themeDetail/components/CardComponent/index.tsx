@@ -27,6 +27,8 @@ type CardComponentProps = {
     showAnswer?: boolean;
     onPress?: () => void;
     onDelete?: () => void;
+    onLongPress?: () => void;
+    onPressOut?: () => void;
 };
 
 const formatDaysWord = (days: number) => {
@@ -100,6 +102,8 @@ export const CardComponent = ({
     showAnswer = false,
     onPress,
     onDelete,
+    onLongPress,
+    onPressOut,
 }: CardComponentProps) => {
     const isMastered = status === StatusCard.MASTERED;
     const isReviewDue =
@@ -154,6 +158,8 @@ export const CardComponent = ({
         <TouchableScale
             style={{ ...layout.block, backgroundColor: cardBackgroundColor }}
             onPress={onPress}
+            onLongPress={onLongPress}
+            onPressOut={onPressOut}
         >
             <View style={styles.container}>
                 <View style={{ backgroundColor: iconBackgroundColor, ...styles.iconWrapper }}>
