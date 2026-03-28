@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import PlayIcon from 'assets/PlayIcon';
 import { Colors, FontWeights, TextSizes } from 'src/styles';
 import styles from './styles';
@@ -14,14 +15,27 @@ type StartButtonProps = {
 };
 
 export function StartButton({ pendingReviewCount, isLoading = false }: StartButtonProps) {
+  const navigation = useNavigation();
   const subtitle = isLoading
     ? 'Собираю план на сегодня'
     : pendingReviewCount > 0
       ? `${pendingReviewCount} ${pluralizeReviewCards(pendingReviewCount)} ждут`
       : 'Все карточки на сегодня закрыты';
 
+  const handlePress = () => {
+    const parentNavigation = navigation.getParent();
+
+    if (!parentNavigation) {
+      return;
+    }
+
+    (parentNavigation as any).navigate('Repeat', {
+      reviewRequestId: Date.now(),
+    });
+  };
+
   return (
-    <TouchableScale activeScale={0.95}>
+    <TouchableScale activeScale={0.95} onPress={handlePress}>
       <LinearGradient
         style={styles.button}
         colors={['#3B82F6', '#2563eb']}
