@@ -10,6 +10,8 @@ import User from 'src/model/User';
 
 const REVIEW_CHANNEL_ID = 'review-reminders';
 const REVIEW_TRIGGER_NOTIFICATION_ID = 'review-reminder-next';
+const REPEAT_OVERDUE_NOTIFICATION_ID = 'review-reminder-repeat-overdue';
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 const pluralizeCards = (count: number) => {
   const mod10 = count % 10;
@@ -78,6 +80,65 @@ const markCardsAsNotified = async (cards: Card[]) => {
   });
 };
 
+/**
+ * Сбрасывает флаг уведомления у карточек, которые уже были уведомлены,
+ * но так и не были повторены — если прошло больше 24 часов.
+ */
+const resetStaleNotifiedCards = async (now: number) => {
+  const staleCards = await database
+    .get<Card>('cards')
+    .query(
+      Q.where('is_notification_sended', true),
+      Q.where('next_review_at', Q.lte(now - DAY_MS)),
+    )
+    .fetch();
+
+  if (staleCards.length === 0) {
+    return;
+  }
+
+  await database.write(async () => {
+    await Promise.all(
+      staleCards.map(card =>
+        card.update(record => {
+          record.isNotificationSended = false;
+        }),
+      ),
+    );
+  });
+};
+
+/**
+ * Планирует повторное фоновое уведомление через 24 часа для карточек,
+ * которые были уведомлены, но пользователь их так и не повторил.
+ */
+const scheduleRepeatOverdueReminder = async (count: number, userName: string | null, now: number) => {
+  if (count === 0) {
+    await notifee.cancelNotification(REPEAT_OVERDUE_NOTIFICATION_ID);
+    return;
+  }
+
+  const trigger: TimestampTrigger = {
+    type: TriggerType.TIMESTAMP,
+    timestamp: now + DAY_MS,
+  };
+
+  await notifee.createTriggerNotification(
+    {
+      id: REPEAT_OVERDUE_NOTIFICATION_ID,
+      title: userName
+        ? `${userName}, карточки всё ещё ждут повторения`
+        : 'Карточки всё ещё ждут повторения',
+      body: `${count} ${pluralizeCards(count)} готово к повторению. Не откладывай!`,
+      android: {
+        channelId: REVIEW_CHANNEL_ID,
+        pressAction: { id: 'default' },
+      },
+    },
+    trigger,
+  );
+};
+
 const notifyDueCards = async (count: number, userName: string | null) => {
   const title = userName
     ? `${userName}, пора повторить карточки`
@@ -142,11 +203,19 @@ export const rescheduleReviewReminder = async () => {
 
   const now = Date.now();
   const userName = await getUserName();
+
+  // Сбросить флаг у карточек, которые были уведомлены, но так и не повторены 24ч+
+  await resetStaleNotifiedCards(now);
+
   const dueCards = await getDueUnsentCards(now);
 
   if (dueCards.length > 0) {
     await notifyDueCards(dueCards.length, userName);
     await markCardsAsNotified(dueCards);
+    // Запланировать повторное уведомление через 24ч, если карточки так и не будут повторены
+    await scheduleRepeatOverdueReminder(dueCards.length, userName, now);
+  } else {
+    await notifee.cancelNotification(REPEAT_OVERDUE_NOTIFICATION_ID);
   }
 
   await scheduleNextReminder(now, userName);
