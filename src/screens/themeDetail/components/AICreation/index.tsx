@@ -11,7 +11,7 @@ export const AICreateBtn = () => {
     const openModal = () => modalRef?.current?.openModal();
   const closeModal = () => modalRef?.current?.closeModal();
 
-    return (<View> 
+    return (<View style={{ position: 'absolute', right: 0, bottom: 0 }}> 
         <TouchableOpacity
             style={styles.button}
             activeOpacity={0.8}
