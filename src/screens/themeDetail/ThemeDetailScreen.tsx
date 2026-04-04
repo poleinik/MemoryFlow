@@ -453,6 +453,7 @@ export const ThemeDetailScreen = ({ route, navigation }: Props) => {
 
         {/* Delete zone — overlays at bottom when dragging */}
         <Animated.View
+          pointerEvents="none"
           style={{
             position: 'absolute',
             bottom: 0,
