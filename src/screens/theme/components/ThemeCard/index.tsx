@@ -11,12 +11,14 @@ type TouchableThemeCardProps = PressableProps & {
   icon: string;
   title: string;
   description: string | null;
+  progress?: number;
 };
 export const ThemeCard = ({
   color,
   icon,
   title,
   description,
+  progress = 0,
   ...rest
 }: TouchableThemeCardProps) => {
   const backgroundColor =
@@ -40,7 +42,7 @@ export const ThemeCard = ({
         <Text style={styles.description} ellipsizeMode="tail" numberOfLines={1}>
           {description || ''}
         </Text>
-        <Bar progress={0.3} width={null} color={color} />
+        <Bar progress={progress} width={null} color={color} />
       </View>
     </TouchableScale>
   );

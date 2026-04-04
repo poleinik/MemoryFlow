@@ -22,6 +22,10 @@ import { useNavigation } from '@react-navigation/native';
 import { useDeleteTheme } from 'src/api/useDeleteTheme';
 import todayBoardStyles from '../TodayBoard/styles';
 import type Theme from 'src/model/Themes';
+import { Q } from '@nozbe/watermelondb';
+import { database } from 'src/model';
+import type Card from 'src/model/Cards';
+import { StatusCard } from 'src/model/consts';
 
 const DELETE_ZONE_HEIGHT = 72;
 
@@ -29,7 +33,25 @@ type ThemeBoardProps = {
   onScrollEnabledChange?: (isEnabled: boolean) => void;
 };
 
+
 const TAB_BAR_HEIGHT = 60;
+
+const fetchProgressMap = async (themes: Theme[]): Promise<Record<string, number>> => {
+  if (themes.length === 0) return {};
+  const themeIds = themes.map(t => t.id);
+  const allCards = await database
+    .get<Card>('cards')
+    .query(Q.where('theme_id', Q.oneOf(themeIds)))
+    .fetch();
+  const map: Record<string, number> = {};
+  for (const theme of themes) {
+    const themeCards = allCards.filter(c => c.themeId === theme.id);
+    const total = themeCards.length;
+    const mastered = themeCards.filter(c => c.status === StatusCard.MASTERED).length;
+    map[theme.id] = total > 0 ? mastered / total : 0;
+  }
+  return map;
+};
 
 export function ThemeBoard({ onScrollEnabledChange }: ThemeBoardProps) {
   const navigation = useNavigation();
@@ -37,10 +59,15 @@ export function ThemeBoard({ onScrollEnabledChange }: ThemeBoardProps) {
   const { deleteTheme } = useDeleteTheme();
   const insets = useSafeAreaInsets();
   const tabBarOffset = TAB_BAR_HEIGHT + insets.bottom;
+  const [progressMap, setProgressMap] = useState<Record<string, number>>({});
 
   useEffect(() => {
     fetch();
   }, []);
+
+  useEffect(() => {
+    fetchProgressMap(themes).then(setProgressMap);
+  }, [themes]);
 
   const modalRef = useRef<ModalHandle>(null);
   const openModal = () => modalRef?.current?.openModal();
@@ -250,6 +277,7 @@ export function ThemeBoard({ onScrollEnabledChange }: ThemeBoardProps) {
             icon={item.icon}
             title={item.title}
             description={item.description}
+            progress={progressMap[item.id] ?? 0}
             onPress={() => {
               if (!isDraggingRef.current) {
                 (navigation as any).navigate('ThemeDetail', { id: item.id });
