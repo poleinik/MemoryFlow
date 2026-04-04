@@ -1,96 +1,79 @@
 import { StyleSheet } from 'react-native';
 import { Colors, FontWeights, TextSizes } from 'src/styles';
 
-const BUBBLE_BG = '#F6FBFF';
-const BUBBLE_BORDER = '#D8ECFF';
-
 const styles = StyleSheet.create({
   wrapper: {
     display: 'flex',
     flexDirection: 'column',
     gap: 12,
   },
-  sectionLabel: {
-    ...TextSizes.small,
-    fontWeight: FontWeights.bold,
-    color: Colors.textPrimary,
+  text: {
     opacity: 0.6,
     textTransform: 'uppercase',
   },
-  bubbleContainer: {
-    marginBottom: 6,
-  },
-  bubble: {
+  chatRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    padding: 16,
-    gap: 14,
-    borderRadius: 20,
-    backgroundColor: BUBBLE_BG,
-    borderWidth: 1,
-    borderColor: BUBBLE_BORDER,
-    shadowColor: '#0f172a',
-    shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 8 },
-    shadowRadius: 16,
-    elevation: 2,
+    gap: 12,
   },
-  avatarRing: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    borderWidth: 2.5,
-    borderColor: Colors.primary,
+  avatarWrapper: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: Colors.backgroundPrimary,
+    borderWidth: 1.5,
+    borderColor: '#D8ECFF',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.backgroundPrimary,
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 8,
+    elevation: 2,
   },
-  bubbleContent: {
+  chatContent: {
     flex: 1,
     gap: 6,
   },
-  bubbleHeader: {
+  senderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 8,
+    marginLeft: 2,
   },
-  bubbleTitle: {
+  senderName: {
     ...TextSizes.small,
-    fontWeight: FontWeights.bold,
+    fontWeight: FontWeights.semibold,
     color: Colors.primary,
-    opacity: 0.8,
   },
-  bubbleMessage: {
+  bubble: {
+    backgroundColor: Colors.backgroundPrimary,
+    borderRadius: 16,
+    borderTopLeftRadius: 4,
+    padding: 14,
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.07,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  bubbleText: {
     ...TextSizes.medium,
     fontWeight: FontWeights.medium,
     color: Colors.textPrimary,
     lineHeight: 22,
   },
-  bubbleTailOuter: {
-    position: 'absolute',
-    bottom: -10,
-    left: 28,
-    width: 0,
-    height: 0,
-    borderLeftWidth: 10,
-    borderRightWidth: 10,
-    borderTopWidth: 10,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderTopColor: BUBBLE_BORDER,
+  typingDots: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 4,
   },
-  bubbleTail: {
-    position: 'absolute',
-    bottom: -8,
-    left: 29,
-    width: 0,
-    height: 0,
-    borderLeftWidth: 9,
-    borderRightWidth: 9,
-    borderTopWidth: 9,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderTopColor: BUBBLE_BG,
+  typingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.textTertiary,
   },
 });
 export default styles;
