@@ -4,6 +4,7 @@ import {
   Alert,
   Animated,
   PanResponder,
+  Dimensions,
 } from 'react-native';
 import EmptyThemesIcon from 'assets/EmptyThemesIcon';
 import { Colors, TextSizes, FontWeights } from 'src/styles';
@@ -11,6 +12,7 @@ import PlusIcon from 'assets/PlusIcon';
 import TrashIcon from 'assets/TrashIcon';
 import TouchableScale from 'src/components/TouchableScale';
 import { Portal } from 'react-native-portalize';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Modal, ModalHandle } from 'src/components/Modal';
 import { CreateThemeModal } from '../CreateThemeModal';
@@ -27,10 +29,14 @@ type ThemeBoardProps = {
   onScrollEnabledChange?: (isEnabled: boolean) => void;
 };
 
+const TAB_BAR_HEIGHT = 60;
+
 export function ThemeBoard({ onScrollEnabledChange }: ThemeBoardProps) {
   const navigation = useNavigation();
   const { themes, fetch } = useGetThemes();
   const { deleteTheme } = useDeleteTheme();
+  const insets = useSafeAreaInsets();
+  const tabBarOffset = TAB_BAR_HEIGHT + insets.bottom;
 
   useEffect(() => {
     fetch();
@@ -112,8 +118,7 @@ export function ThemeBoard({ onScrollEnabledChange }: ThemeBoardProps) {
           translateY.setValue(gestureState.dy - startDy.current);
 
           const fingerY = evt.nativeEvent.pageY;
-          const relY = fingerY - containerPageY.current;
-          const over = relY > containerHeight.current - DELETE_ZONE_HEIGHT;
+          const over = fingerY > Dimensions.get('window').height - tabBarOffset - DELETE_ZONE_HEIGHT;
           if (over !== isOverDeleteRef.current) {
             isOverDeleteRef.current = over;
             setIsOverDelete(over);
@@ -121,8 +126,7 @@ export function ThemeBoard({ onScrollEnabledChange }: ThemeBoardProps) {
         },
         onPanResponderRelease: evt => {
           const fingerY = evt.nativeEvent.pageY;
-          const relY = fingerY - containerPageY.current;
-          const over = relY > containerHeight.current - DELETE_ZONE_HEIGHT;
+          const over = fingerY > Dimensions.get('window').height - tabBarOffset - DELETE_ZONE_HEIGHT;
 
           if (over && draggingItemRef.current) {
             const item = { ...draggingItemRef.current };
@@ -302,20 +306,11 @@ export function ThemeBoard({ onScrollEnabledChange }: ThemeBoardProps) {
         </TouchableScale>
       </View>
       <Portal>
-        <Modal ref={modalRef}>
-          <CreateThemeModal closeModal={closeModal} />
-        </Modal>
-      </Portal>
-      <View
-        ref={containerRef}
-        style={{ display: 'flex', flexDirection: 'column', flex: 1 }}
-        {...panResponder.panHandlers}
-      >
-        {/* Delete zone — overlays at bottom when dragging */}
         <Animated.View
+          pointerEvents="none"
           style={{
             position: 'absolute',
-            bottom: 0,
+            bottom: tabBarOffset,
             left: 0,
             right: 0,
             height: DELETE_ZONE_HEIGHT,
@@ -346,7 +341,17 @@ export function ThemeBoard({ onScrollEnabledChange }: ThemeBoardProps) {
             Перетащите сюда
           </Text>
         </Animated.View>
-
+      </Portal>
+      <Portal>
+        <Modal ref={modalRef}>
+          <CreateThemeModal closeModal={closeModal} />
+        </Modal>
+      </Portal>
+      <View
+        ref={containerRef}
+        style={{ display: 'flex', flexDirection: 'column', flex: 1 }}
+        {...panResponder.panHandlers}
+      >
         {themes.length === 0 ? (
           <View
             style={{
