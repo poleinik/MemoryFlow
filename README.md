@@ -86,6 +86,18 @@ You've successfully run and modified your React Native App. :partying_face:
 
 If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
 
+# Ollama Setup
+
+Create a local file at `src/config/ollama.local.ts` with your token:
+
+```ts
+export const OLLAMA_CONFIG = {
+	apiKey: 'your-ollama-token',
+};
+```
+
+That file is ignored by git and should never be committed. Use `src/config/ollama.local.example.ts` only as a template without real secrets.
+
 # Learn More
 
 To learn more about React Native, take a look at the following resources:
